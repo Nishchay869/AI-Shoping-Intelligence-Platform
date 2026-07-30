@@ -1,0 +1,138 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Cancel a still-running run for the same branch when a new commit lands, so pushes don't queue up.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---- Secrets scan: runs first, on every push and PR. Scans the full git history each time (not just the
+  # diff) so a secret committed and later "removed" in a follow-up commit still gets caught. ----
+  secrets-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ---- Test: runs on every push and PR. Mirrors exactly what's been verified by hand throughout this
+  # project - backend pytest against a real Postgres+Redis, frontend typecheck/build/vitest. ----
+  test-backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: pricewise
+          POSTGRES_USER: pricewise
+          POSTGRES_PASSWORD: pricewise
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U pricewise" --health-interval 10s --health-timeout 5s --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      DATABASE_URL: postgresql+psycopg://pricewise:pricewise@localhost:5432/pricewise
+      REDIS_URL: redis://localhost:6379/0
+      SUPABASE_URL: https://rniwnafsqkjvcrkwhpwg.supabase.co
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.13" }
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends tesseract-ocr
+      - name: Install dependencies
+        working-directory: backend
+        run: pip install -r requirements.txt
+      - name: Apply migrations
+        working-directory: backend
+        run: alembic upgrade head
+      - name: Run tests
+        working-directory: backend
+        run: pytest -q
+
+  test-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22", cache: "npm" }
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+        env:
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+          NEXT_PUBLIC_SUPABASE_URL: https://rniwnafsqkjvcrkwhpwg.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key-for-ci-build
+          BACKEND_API_URL: http://localhost:8000/api/v1
+      - run: npm test
+
+  # ---- Build & push: only on main, only after both test jobs pass. Pushes both images to GHCR, tagged
+  # with both `latest` and the commit SHA (the SHA tag makes a manual rollback a one-line docker-compose
+  # image swap on the server, without needing to rebuild anything). ----
+  build-and-push:
+    needs: [secrets-scan, test-backend, test-frontend]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: |
+            ghcr.io/${{ github.repository }}-backend:latest
+            ghcr.io/${{ github.repository }}-backend:${{ github.sha }}
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL }}
+            NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+            NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          tags: |
+            ghcr.io/${{ github.repository }}-frontend:latest
+            ghcr.io/${{ github.repository }}-frontend:${{ github.sha }}
+
+  # ---- Deploy: SSH into EC2 and run the same deploy script a human would run manually. ----
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /opt/pricewise
+            git pull --ff-only origin main
+            ./deploy/scripts/deploy.sh

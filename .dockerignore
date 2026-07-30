@@ -1,0 +1,13 @@
+node_modules
+.next
+.git
+.env
+.env.local
+.env*.local
+coverage
+*.tsbuildinfo
+backend
+tests
+supabase
+contracts
+README.md

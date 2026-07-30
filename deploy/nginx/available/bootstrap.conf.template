@@ -1,0 +1,17 @@
+# HTTP-only bootstrap config. Active before the first TLS certificate exists - Let's Encrypt's HTTP-01
+# challenge needs port 80 serving real traffic for DOMAIN_NAME before certbot can issue anything, so nginx
+# cannot start with the HTTPS config (below) until a certificate already exists on disk. Swapped out for
+# available/production.conf.template by deploy/scripts/init-tls.sh once the first certificate is issued.
+server {
+    listen 80;
+    server_name ${DOMAIN_NAME};
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        default_type text/plain;
+        return 200 "Pricewise is starting up. Run deploy/scripts/init-tls.sh to enable HTTPS.";
+    }
+}

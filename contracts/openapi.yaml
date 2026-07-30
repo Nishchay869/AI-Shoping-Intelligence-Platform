@@ -1,0 +1,32 @@
+openapi: 3.1.0
+info:
+  title: Pricewise API
+  version: 1.0.0
+  description: Versioned API for Shopping Intelligence Platform clients.
+paths:
+  /api/v1/listings/resolve:
+    post:
+      summary: Resolve a supported retailer URL through an approved adapter
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string, minLength: 16, maxLength: 128 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url: { type: string, format: uri }
+      responses:
+        '201': { description: Listing resolved }
+        '400': { description: Invalid request or missing idempotency key }
+        '422': { description: Unsupported retailer or URL }
+  /api/health:
+    get:
+      summary: Liveness probe
+      responses:
+        '200': { description: Application is running }

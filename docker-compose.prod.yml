@@ -1,0 +1,74 @@
+# Production stack for the EC2 host: nginx (TLS termination) -> frontend (Next.js) -> backend (FastAPI),
+# with postgres/redis kept off the public network entirely. Images are pre-built and pushed to GHCR by
+# .github/workflows/ci-cd.yml; this file only ever pulls and runs them - it never builds from source on the
+# server.
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-pricewise}
+      POSTGRES_USER: ${POSTGRES_USER:-pricewise}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pricewise} -d ${POSTGRES_DB:-pricewise}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    image: ${BACKEND_IMAGE:?Set BACKEND_IMAGE in .env, e.g. ghcr.io/OWNER/REPO-backend:latest}
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    expose: ["8000"] # not published to the host - reachable only from the frontend, over the compose network
+
+  frontend:
+    image: ${FRONTEND_IMAGE:?Set FRONTEND_IMAGE in .env, e.g. ghcr.io/OWNER/REPO-frontend:latest}
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      - backend
+    expose: ["3000"]
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN_NAME: ${DOMAIN_NAME:?Set DOMAIN_NAME in .env}
+    volumes:
+      - ./deploy/nginx/templates:/etc/nginx/templates:ro
+      - certbot_www:/var/www/certbot:ro
+      - certbot_certs:/etc/letsencrypt:ro
+    depends_on:
+      - frontend
+
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - certbot_www:/var/www/certbot
+      - certbot_certs:/etc/letsencrypt
+
+volumes:
+  postgres_data:
+  redis_data:
+  certbot_www:
+  certbot_certs:

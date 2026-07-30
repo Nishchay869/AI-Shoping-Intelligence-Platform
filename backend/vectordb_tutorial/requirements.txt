@@ -1,0 +1,5 @@
+sentence-transformers==5.6.1
+chromadb==1.5.9
+faiss-cpu==1.14.3
+qdrant-client==1.18.0
+pinecone==9.1.0

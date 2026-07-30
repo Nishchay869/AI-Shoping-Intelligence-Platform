@@ -1,0 +1,19 @@
+# This is the file the nginx container actually mounts and renders via envsubst (only ${DOMAIN_NAME} is
+# substituted - nginx's own $host/$scheme/etc. variables are untouched since they aren't container env vars).
+# It starts as a copy of ../available/bootstrap.conf.template so a fresh clone boots safely with no TLS
+# certificate yet. deploy/scripts/init-tls.sh overwrites this file with ../available/production.conf.template
+# once the first Let's Encrypt certificate has been issued. Do not hand-edit both copies independently -
+# edit the one under available/ and re-run init-tls.sh (or copy it over manually) to change the live config.
+server {
+    listen 80;
+    server_name ${DOMAIN_NAME};
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        default_type text/plain;
+        return 200 "Pricewise is starting up. Run deploy/scripts/init-tls.sh to enable HTTPS.";
+    }
+}
