@@ -79,9 +79,15 @@ export function AssistantWidget() {
   return (
     <>
       {open && (
-        <div className="fixed bottom-24 right-6 z-50 flex h-[560px] w-[380px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border bg-white shadow-2xl">
-          <div className="flex items-center justify-between border-b bg-brand-600 px-4 py-3 text-white">
-            <p className="text-sm font-bold">AI Shopping Assistant</p>
+        <div className="fixed bottom-24 right-6 z-50 flex h-[560px] w-[380px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+          <div className="flex items-center justify-between bg-brand-700 px-4 py-3 text-white">
+            <div className="flex items-center gap-3">
+              <span className="grid h-8 w-8 place-items-center rounded-full bg-white/15"><Icon name="sparkles" className="h-4 w-4" /></span>
+              <div>
+                <p className="text-sm font-bold leading-tight">AI Shopping Assistant</p>
+                <p className="label-caps text-brand-100">Always online</p>
+              </div>
+            </div>
             <button aria-label="Close assistant" onClick={() => setOpen(false)} className="rounded-full p-1 hover:bg-white/20"><Icon name="x" className="h-5 w-5" /></button>
           </div>
 
@@ -98,17 +104,17 @@ export function AssistantWidget() {
           <div className="flex-1 space-y-4 overflow-y-auto p-4">
             {messages.map((message, index) => (
               <div key={index} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-6 ${message.role === "user" ? "bg-brand-600 text-white" : "bg-slate-100 text-slate-700"}`}>
+                <div className={`max-w-[85%] px-3 py-2 text-sm leading-6 shadow-sm ${message.role === "user" ? "rounded-2xl rounded-tr-sm bg-brand-600 text-white" : "rounded-2xl rounded-tl-sm bg-slate-100 text-ink"}`}>
                   <p className="whitespace-pre-wrap">{message.role === "assistant" ? renderWithBold(message.content) : message.content}</p>
                   {message.toolCalls && message.toolCalls.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1">
-                      {message.toolCalls.map((toolName, i) => <span key={`${toolName}-${i}`} className="rounded-full bg-white/60 px-2 py-0.5 text-xs font-semibold text-slate-500">{toolName}</span>)}
+                      {message.toolCalls.map((toolName, i) => <span key={`${toolName}-${i}`} className="pill bg-white/60 text-slate-500">{toolName}</span>)}
                     </div>
                   )}
                   {message.sources && message.sources.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {message.sources.map((source) => (
-                        <a key={source.label} href={source.url} target="_blank" rel="noopener noreferrer" className="rounded-full bg-white/60 px-2 py-0.5 text-xs font-semibold text-blue-600 underline hover:text-blue-700" title={source.title}>
+                        <a key={source.label} href={source.url} target="_blank" rel="noopener noreferrer" className="pill bg-white/60 text-blue-600 underline hover:text-blue-700" title={source.title}>
                           {source.label} ↗
                         </a>
                       ))}
@@ -117,7 +123,7 @@ export function AssistantWidget() {
                 </div>
               </div>
             ))}
-            {loading && <div className="flex justify-start"><p className="max-w-[85%] rounded-2xl bg-slate-100 px-3 py-2 text-sm text-slate-400">Thinking…</p></div>}
+            {loading && <div className="flex justify-start"><p className="max-w-[85%] rounded-2xl rounded-tl-sm bg-slate-100 px-3 py-2 text-sm text-slate-400">Thinking…</p></div>}
             <div ref={bottomRef} />
           </div>
 

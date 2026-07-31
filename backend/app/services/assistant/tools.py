@@ -8,11 +8,11 @@ from uuid import UUID
 from langchain_core.tools import tool
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from app.core.currency import to_inr
 from app.db.session import SessionLocal
 from app.infrastructure.web_search import search_web
 from app.models import Product, ProductSpecification
 from app.services.assistant import vector_store
-from app.services.assistant.currency import to_inr
 
 
 def _session() -> Session:

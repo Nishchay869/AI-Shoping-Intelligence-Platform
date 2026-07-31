@@ -9,8 +9,13 @@
 }
 
 @layer components {
-  .card { @apply rounded-2xl border border-slate-200 bg-white shadow-card; }
-  .input { @apply h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-50; }
-  .btn-primary { @apply inline-flex h-10 items-center justify-center rounded-xl bg-brand-600 px-4 text-sm font-semibold text-white transition hover:bg-brand-700 focus:outline-none focus:ring-4 focus:ring-brand-50 disabled:cursor-not-allowed disabled:opacity-60; }
-  .btn-secondary { @apply inline-flex h-10 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-100; }
+  /* Depth comes from a 1px border, not shadow - shadow is reserved for hover/interactive lift only. */
+  .card { @apply rounded-3xl border border-slate-200 bg-white transition hover:shadow-card; }
+  .input { @apply h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-brand-600 focus:ring-4 focus:ring-brand-50; }
+  .btn-primary { @apply inline-flex h-10 items-center justify-center rounded-lg bg-brand-600 px-4 text-sm font-semibold text-white transition hover:bg-brand-700 focus:outline-none focus:ring-4 focus:ring-brand-50 disabled:cursor-not-allowed disabled:opacity-60; }
+  .btn-secondary { @apply inline-flex h-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-100; }
+  /* For prices, ratings, table columns - JetBrains Mono with tabular figures so digits align. */
+  .data { @apply font-mono tabular-nums; }
+  .label-caps { @apply text-xs font-bold uppercase tracking-wider text-slate-500; }
+  .pill { @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold; }
 }

@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
+import { Icon } from "@/components/icons";
 import { supabase } from "@/shared/supabase/client";
 
 /** Sign-in calls Supabase Auth directly; the resulting session (and its bearer access token) is what
@@ -28,19 +29,34 @@ export default function SignInPage() {
   }
 
   return (
-    <main className="grid min-h-screen place-items-center p-4">
-      <section className="card w-full max-w-md p-7">
-        <Link href="/" className="flex items-center gap-2 text-xl font-bold"><span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-600 text-white">P</span>Pricewise</Link>
-        <h1 className="mt-8 text-2xl font-bold">Welcome back</h1>
-        <p className="mt-2 text-sm text-slate-500">Sign in to see your saved products and alerts.</p>
+    <main className="flex min-h-screen flex-col items-center justify-center bg-slate-50 p-4">
+      <Link href="/" className="mb-8 flex flex-col items-center gap-1">
+        <span className="flex items-center gap-2 text-xl font-bold text-brand-700">
+          <span className="grid h-9 w-9 place-items-center rounded-lg bg-brand-700 text-white">P</span>Pricewise
+        </span>
+        <span className="label-caps text-brand-600/70">AI Intelligence</span>
+      </Link>
+
+      <section className="card w-full max-w-[420px] p-8">
+        <h1 className="text-2xl font-bold text-ink">Welcome back</h1>
+        <p className="mt-2 text-sm text-slate-500">Log in to manage your price alerts and intelligence.</p>
         <form onSubmit={submit} className="mt-6 space-y-4">
-          <label className="block text-sm font-semibold">Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input mt-2" placeholder="you@example.com" required /></label>
-          <label className="block text-sm font-semibold">Password<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="input mt-2" placeholder="••••••••" required /></label>
+          <label className="block">
+            <span className="label-caps">Email address</span>
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input mt-2" placeholder="you@example.com" required />
+          </label>
+          <label className="block">
+            <span className="label-caps">Password</span>
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="input mt-2" placeholder="••••••••" required />
+          </label>
           {error && <p className="text-sm text-rose-600">{error}</p>}
-          <button className="btn-primary w-full" disabled={loading}>{loading ? "Signing in…" : "Sign in"}</button>
+          <button className="btn-primary w-full gap-2" disabled={loading}>
+            {loading ? "Signing in…" : <>Sign in <Icon name="arrow" className="h-4 w-4" /></>}
+          </button>
         </form>
-        <p className="mt-6 text-center text-sm text-slate-500">New to Pricewise? <Link href="/auth/sign-up" className="font-bold text-brand-600">Create an account</Link></p>
       </section>
+
+      <p className="mt-8 text-sm text-slate-500">New to Pricewise? <Link href="/auth/sign-up" className="font-bold text-brand-700 hover:underline">Create an account</Link></p>
     </main>
   );
 }

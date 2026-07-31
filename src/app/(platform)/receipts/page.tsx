@@ -49,26 +49,26 @@ export default function ReceiptsPage() {
 
   return (
     <div>
-      <p className="text-sm font-semibold text-brand-600">AI RECEIPT SCANNER</p>
-      <h1 className="mt-1 text-3xl font-bold">Scan a receipt</h1>
+      <p className="label-caps text-brand-600">AI Receipt Scanner</p>
+      <h1 className="mt-1 text-3xl font-bold text-ink">Scan a receipt</h1>
       <p className="mt-2 max-w-2xl text-sm text-slate-500">Upload a photo of a paper receipt. Tesseract OCR reads the raw text, then Gemini structures it into product names, price, tax, date, store name, and any warranty terms.</p>
 
-      <div className="card mt-6 p-5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="card mt-6 p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4 rounded-xl border-2 border-dashed border-slate-200 p-6">
           <div>
-            <h2 className="font-bold">Upload receipt photo</h2>
+            <h2 className="font-bold text-ink">Upload receipt photo</h2>
             <p className="mt-1 text-sm text-slate-500">JPG, PNG, or WEBP, up to 10MB.</p>
           </div>
-          <label className="btn-secondary cursor-pointer">
-            <Icon name="search" className="mr-2 h-4 w-4" />
-            Upload receipt
+          <label className="btn-primary cursor-pointer">
+            <Icon name="receipt" className="mr-2 h-4 w-4" />
+            Upload receipt photo
             <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
           </label>
         </div>
 
         {previewUrl && (
           <div className="mt-4 flex items-center gap-4">
-            <img src={previewUrl} alt="Uploaded receipt" className="h-24 w-24 rounded-xl object-cover" />
+            <img src={previewUrl} alt="Uploaded receipt" className="h-24 w-24 rounded-xl border border-slate-200 object-cover" />
             {loading && <p className="text-sm text-slate-400">Running OCR and extracting structured fields…</p>}
           </div>
         )}
@@ -76,21 +76,21 @@ export default function ReceiptsPage() {
 
         {result && (
           <div className="mt-6 grid gap-4 lg:grid-cols-3">
-            <div className="card p-4 lg:col-span-2">
+            <div className="card p-5 lg:col-span-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-lg font-bold">{result.store_name ?? "Unknown store"}</h3>
-                <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${result.saved ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>{result.saved ? "Saved to history" : "Sign in to save to history"}</span>
+                <h3 className="text-lg font-bold text-ink">{result.store_name ?? "Unknown store"}</h3>
+                <span className={`pill ${result.saved ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>{result.saved ? "Saved to history" : "Sign in to save to history"}</span>
               </div>
-              <p className="mt-1 text-sm text-slate-500">{result.purchase_date ?? "Date not legible"} · OCR confidence {result.ocr_confidence !== null ? `${Math.round(result.ocr_confidence * 100)}%` : "n/a"}</p>
+              <p className="mt-1 text-sm text-slate-500">{result.purchase_date ?? "Date not legible"} · OCR confidence <span className="data">{result.ocr_confidence !== null ? `${Math.round(result.ocr_confidence * 100)}%` : "n/a"}</span></p>
 
               <table className="mt-4 w-full text-sm">
-                <thead><tr className="border-b text-left text-xs uppercase tracking-wide text-slate-400"><th className="pb-2">Product</th><th className="pb-2 text-center">Qty</th><th className="pb-2 text-right">Price</th></tr></thead>
+                <thead><tr className="border-b border-slate-100 text-left"><th className="pb-2 label-caps">Product</th><th className="pb-2 text-center label-caps">Qty</th><th className="pb-2 text-right label-caps">Price</th></tr></thead>
                 <tbody>
                   {result.items.map((item, index) => (
-                    <tr key={index} className="border-b last:border-0">
-                      <td className="py-2">{item.product_name}</td>
-                      <td className="py-2 text-center text-slate-500">{item.quantity}</td>
-                      <td className="py-2 text-right font-medium">{formatPrice(item.price_minor, result.currency)}</td>
+                    <tr key={index} className="border-b border-slate-100 last:border-0">
+                      <td className="py-2 text-ink">{item.product_name}</td>
+                      <td className="data py-2 text-center text-slate-500">{item.quantity}</td>
+                      <td className="data py-2 text-right font-medium text-ink">{formatPrice(item.price_minor, result.currency)}</td>
                     </tr>
                   ))}
                   {result.items.length === 0 && <tr><td colSpan={3} className="py-4 text-center text-slate-400">No line items were legible on this receipt.</td></tr>}
@@ -100,11 +100,11 @@ export default function ReceiptsPage() {
               {result.warranty_text && <div className="mt-4 rounded-xl bg-brand-50 p-3 text-sm text-brand-700"><span className="font-semibold">Warranty / return policy: </span>{result.warranty_text}</div>}
             </div>
 
-            <div className="card space-y-3 p-4">
-              <h3 className="font-bold">Totals</h3>
-              <div className="flex justify-between text-sm"><span className="text-slate-500">Subtotal</span><span>{result.subtotal_minor !== null ? formatPrice(result.subtotal_minor, result.currency) : "—"}</span></div>
-              <div className="flex justify-between text-sm"><span className="text-slate-500">Tax</span><span>{result.tax_minor !== null ? formatPrice(result.tax_minor, result.currency) : "—"}</span></div>
-              <div className="flex justify-between border-t pt-3 text-base font-bold"><span>Total</span><span>{result.total_minor !== null ? formatPrice(result.total_minor, result.currency) : "—"}</span></div>
+            <div className="card space-y-3 p-5">
+              <h3 className="font-bold text-ink">Totals</h3>
+              <div className="flex justify-between text-sm"><span className="text-slate-500">Subtotal</span><span className="data text-ink">{result.subtotal_minor !== null ? formatPrice(result.subtotal_minor, result.currency) : "—"}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-slate-500">Tax</span><span className="data text-ink">{result.tax_minor !== null ? formatPrice(result.tax_minor, result.currency) : "—"}</span></div>
+              <div className="flex justify-between border-t border-slate-100 pt-3 text-base font-bold"><span className="text-ink">Total</span><span className="data text-ink">{result.total_minor !== null ? formatPrice(result.total_minor, result.currency) : "—"}</span></div>
             </div>
           </div>
         )}

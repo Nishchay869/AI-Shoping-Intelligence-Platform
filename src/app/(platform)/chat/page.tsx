@@ -44,15 +44,15 @@ export default function ChatPage() {
   return (
     <div className="mx-auto flex max-w-3xl flex-col">
       <div>
-        <p className="text-sm font-semibold text-brand-600">AI SHOPPING COPILOT</p>
-        <h1 className="mt-1 text-3xl font-bold">Shopping Chat</h1>
+        <p className="label-caps text-brand-600">AI Shopping Copilot</p>
+        <h1 className="mt-1 text-3xl font-bold text-ink">Shopping Chat</h1>
         <p className="mt-2 text-slate-500">Answers are retrieved from the product catalog, buyer reviews, and a live web search, with sources cited.</p>
       </div>
       <div className="card mt-6 flex h-[560px] flex-col overflow-hidden">
         <div className="flex-1 space-y-5 overflow-y-auto p-5">
           {messages.map((message, index) => (
             <div key={index} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
-              <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-6 ${message.role === "user" ? "bg-brand-600 text-white" : "bg-slate-100 text-slate-700"}`}>
+              <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-6 ${message.role === "user" ? "bg-brand-600 text-white" : "bg-slate-100 text-ink"}`}>
                 <p>{message.content}</p>
                 {message.sources && message.sources.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-1">
@@ -77,7 +77,7 @@ export default function ChatPage() {
           <label className="sr-only" htmlFor="chat-message">Ask Shopping Chat</label>
           <div className="flex gap-2">
             <input id="chat-message" value={value} onChange={(event) => setValue(event.target.value)} className="input" placeholder="What do buyers say about battery life?" disabled={loading} />
-            <button type="submit" className="btn-primary" aria-label="Send message" disabled={loading}><Icon name="arrow" className="h-4 w-4" /></button>
+            <button type="submit" className="btn-primary" aria-label="Send message" disabled={loading}><Icon name="send" className="h-4 w-4" /></button>
           </div>
           <p className="mt-2 text-xs text-slate-400">AI can make mistakes. Verify final retailer details before buying.</p>
         </form>

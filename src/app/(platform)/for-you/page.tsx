@@ -98,12 +98,12 @@ export default function ForYouPage() {
 
   return (
     <div>
-      <p className="text-sm font-semibold text-brand-600">PERSONALIZED FOR YOU</p>
-      <h1 className="mt-1 text-3xl font-bold">Your taste, as a vector</h1>
+      <p className="label-caps text-brand-600">Personalized for you</p>
+      <h1 className="mt-1 text-3xl font-bold text-ink">Your taste, as a vector</h1>
       <p className="mt-2 max-w-2xl text-sm text-slate-500">Every search, wishlist add, purchase, and click below is tracked as a real embedding signal. Try a few, then generate your personalized picks - a pure embeddings pipeline with no LLM in the loop.</p>
 
-      <div className="card mt-6 p-5">
-        <h2 className="font-bold">1. Generate some activity</h2>
+      <div className="card mt-6 p-6">
+        <h2 className="font-bold text-ink">1. Generate some activity</h2>
         <div className="mt-3 flex gap-2">
           <input value={query} onChange={(e) => setQuery(e.target.value)} className="input flex-1" placeholder="Search for something, e.g. wireless headphones" />
           <button onClick={logSearch} className="btn-secondary whitespace-nowrap">Log search</button>
@@ -111,10 +111,10 @@ export default function ForYouPage() {
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {products.map((product) => (
-            <article key={product.id} className="rounded-xl border p-3">
-              <p className="text-xs font-semibold text-brand-600">{product.brand ?? "Unbranded"}</p>
-              <p className="mt-1 line-clamp-2 min-h-10 text-sm font-semibold">{product.title}</p>
-              <p className="mt-1 text-sm font-bold">{formatPrice(product.current_price_minor, product.currency)}</p>
+            <article key={product.id} className="rounded-xl border border-slate-200 p-3">
+              <p className="label-caps text-brand-600">{product.brand ?? "Unbranded"}</p>
+              <p className="mt-1 line-clamp-2 min-h-10 text-sm font-semibold text-ink">{product.title}</p>
+              <p className="data mt-1 text-sm font-bold text-ink">{formatPrice(product.current_price_minor, product.currency)}</p>
               <div className="mt-3 flex flex-wrap gap-1.5">
                 <button onClick={() => logClick(product)} className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-200">View</button>
                 <button onClick={() => toggleWishlist(product)} className={`rounded-lg px-2 py-1 text-xs font-semibold ${wishlisted.has(product.id) ? "bg-rose-100 text-rose-600" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>{wishlisted.has(product.id) ? "Wishlisted" : "Wishlist"}</button>
@@ -127,9 +127,9 @@ export default function ForYouPage() {
         {status && <p className="mt-3 text-xs text-slate-500">{status}</p>}
       </div>
 
-      <div className="card mt-6 p-5">
+      <div className="card mt-6 p-6">
         <div className="flex items-center justify-between">
-          <h2 className="font-bold">2. Your personalized picks</h2>
+          <h2 className="font-bold text-ink">2. Your personalized picks</h2>
           <button onClick={loadPersonalizedPicks} className="btn-primary" disabled={loadingPicks}>{loadingPicks ? "Building your taste vector…" : "Get personalized picks"}</button>
         </div>
 
@@ -141,10 +141,13 @@ export default function ForYouPage() {
             <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {personalized.items.map((item) => (
                 <article key={item.product.id} className="card overflow-hidden p-4">
-                  <p className="text-xs font-semibold text-brand-600">#{item.rank} · {Math.round(item.similarity * 100)}% match</p>
-                  <h3 className="mt-1 line-clamp-2 min-h-10 text-sm font-semibold">{item.product.title}</h3>
-                  <span className="mt-2 block text-lg font-bold">{formatPrice(item.product.current_price_minor, item.product.currency)}</span>
-                  <p className="mt-3 rounded-lg bg-slate-50 p-3 text-xs text-slate-600">{item.reason}</p>
+                  <div className="flex items-center gap-2">
+                    <span className="pill bg-brand-100 text-brand-700">#{item.rank}</span>
+                    <span className="data text-xs text-slate-500">{Math.round(item.similarity * 100)}% match</span>
+                  </div>
+                  <h3 className="mt-2 line-clamp-2 min-h-10 text-sm font-semibold text-ink">{item.product.title}</h3>
+                  <span className="data mt-2 block text-lg font-bold text-ink">{formatPrice(item.product.current_price_minor, item.product.currency)}</span>
+                  <p className="mt-3 rounded-lg bg-slate-50 p-3 text-xs leading-5 text-slate-600">{item.reason}</p>
                 </article>
               ))}
             </div>

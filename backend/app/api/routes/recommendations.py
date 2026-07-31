@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from app.api.deps import get_current_user, get_current_user_optional, rate_limit
+from app.api.deps import get_current_user, rate_limit
 from app.db.session import get_db
 from app.models import User
 from app.schemas.personalization import PersonalizedRecommendationResponse
@@ -12,9 +12,9 @@ router = APIRouter(prefix="/recommendations", tags=["recommendations"])
 
 
 @router.post("", response_model=RecommendationResponse, dependencies=[Depends(rate_limit(10, 60))])
-def recommend(payload: RecommendationRequest, db: Session = Depends(get_db), user: User | None = Depends(get_current_user_optional)) -> RecommendationResponse:
-    """Turn a shopper's budget/purpose/brand/features into the top AI-explained product picks; persists to the feed when signed in."""
-    return generate_recommendations(db, payload, user.id if user else None)
+def recommend(payload: RecommendationRequest) -> RecommendationResponse:
+    """Turn a shopper's budget/purpose/brand/features into up to 10 ranked, real, live product listings."""
+    return generate_recommendations(payload)
 
 
 @router.get("/personalized", response_model=PersonalizedRecommendationResponse, dependencies=[Depends(rate_limit(20, 60))])

@@ -12,8 +12,8 @@ from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from app.core.config import get_settings
+from app.core.currency import to_inr
 from app.models import Product, Review
-from app.services.assistant.currency import to_inr
 
 PERSIST_DIR = Path(__file__).resolve().parent / "storage" / "chroma"
 COLLECTION_NAME = "shopping_assistant"

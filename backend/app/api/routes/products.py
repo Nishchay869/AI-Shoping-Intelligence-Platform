@@ -7,7 +7,9 @@ from app.db.session import get_db
 from app.models import Product
 from app.schemas.catalog import ProductResponse
 from app.schemas.image_search import ImageSearchResponse, ImageSearchResult
+from app.schemas.price_comparison import PriceComparisonRequest, PriceComparisonResponse, PriceListingResponse
 from app.services.image_search import search_by_image
+from app.services.price_comparison import compare_prices
 
 router = APIRouter(prefix="/products", tags=["products"])
 MAX_IMAGE_BYTES = 10 * 1024 * 1024
@@ -41,3 +43,11 @@ async def search_products_by_image(image: UploadFile = File(...), top_k: int = Q
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
     return ImageSearchResponse(results=[ImageSearchResult(product=product, similarity=similarity) for product, similarity in matches])
+
+
+@router.post("/compare-prices", response_model=PriceComparisonResponse, dependencies=[Depends(rate_limit(15, 60))])
+def compare_product_prices(payload: PriceComparisonRequest) -> PriceComparisonResponse:
+    """Live cross-retailer price comparison via web search + LLM extraction (see services/price_comparison.py) -
+    tightly rate-limited since each call is a real Tavily search plus a Gemini call, not a cached catalog read."""
+    listings = compare_prices(payload.product_name)
+    return PriceComparisonResponse(listings=[PriceListingResponse(retailer=listing.retailer, price=listing.price, currency=listing.currency, url=listing.url) for listing in listings])

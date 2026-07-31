@@ -38,10 +38,10 @@ function ImageSearch() {
   }
 
   return (
-    <div className="card mt-6 p-5">
+    <div className="card mt-6 p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="font-bold">Search by photo</h2>
+          <h2 className="font-bold text-ink">Search by photo</h2>
           <p className="mt-1 text-sm text-slate-500">Upload a picture of a product to find visually similar items in the catalog.</p>
         </div>
         <label className="btn-secondary cursor-pointer">
@@ -53,7 +53,7 @@ function ImageSearch() {
 
       {previewUrl && (
         <div className="mt-4 flex items-center gap-4">
-          <img src={previewUrl} alt="Uploaded query" className="h-20 w-20 rounded-xl object-cover" />
+          <img src={previewUrl} alt="Uploaded query" className="h-20 w-20 rounded-xl border border-slate-200 object-cover" />
           {loading && <p className="text-sm text-slate-400">Embedding image and searching…</p>}
         </div>
       )}
@@ -64,11 +64,11 @@ function ImageSearch() {
           {results.map(({ product, similarity }) => (
             <article key={product.id} className="card overflow-hidden p-4">
               {product.image_url && <img src={product.image_url} alt={product.title} className="mb-3 h-32 w-full rounded-lg object-cover" />}
-              <p className="text-xs font-semibold text-brand-600">{Math.round(similarity * 100)}% visual match · {product.brand ?? "Unbranded"}</p>
-              <h3 className="mt-1 line-clamp-2 min-h-10 text-sm font-semibold">{product.title}</h3>
+              <p className="label-caps text-brand-600">{Math.round(similarity * 100)}% visual match · {product.brand ?? "Unbranded"}</p>
+              <h3 className="mt-1 line-clamp-2 min-h-10 text-sm font-semibold text-ink">{product.title}</h3>
               <div className="mt-2 flex items-center justify-between">
-                <span className="text-lg font-bold">{formatPrice(product.current_price_minor, product.currency)}</span>
-                {product.average_rating !== null && <span className="text-xs text-slate-500">★ {product.average_rating} ({product.review_count})</span>}
+                <span className="data text-lg font-bold text-ink">{formatPrice(product.current_price_minor, product.currency)}</span>
+                {product.average_rating !== null && <span className="data text-xs text-slate-500">★ {product.average_rating} ({product.review_count})</span>}
               </div>
             </article>
           ))}
@@ -87,29 +87,30 @@ export default function SearchPage() {
 
   return (
     <div>
-      <p className="text-sm font-semibold text-brand-600">DISCOVER</p>
-      <h1 className="mt-1 text-3xl font-bold">Find the best time to buy</h1>
+      <p className="label-caps text-brand-600">Discover</p>
+      <h1 className="mt-1 text-3xl font-bold text-ink">Find the best time to buy</h1>
 
-      <ImageSearch />
-
-      <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+      <div className="card mt-6 flex flex-col gap-3 p-3 sm:flex-row">
         <label className="relative flex-1">
           <span className="sr-only">Search products</span>
-          <Icon name="search" className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
-          <input value={query} onChange={(e) => setQuery(e.target.value)} className="input pl-10" placeholder="Search headphones, watches, shoes…" />
+          <Icon name="search" className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} className="h-11 w-full rounded-full border-none bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:ring-4 focus:ring-brand-50" placeholder="Search for a product, brand, or category…" />
         </label>
-        <select aria-label="Filter category" className="input w-full sm:w-44" value={category} onChange={(e) => setCategory(e.target.value)}>
+        <select aria-label="Filter category" className="input h-11 rounded-full sm:w-44" value={category} onChange={(e) => setCategory(e.target.value)}>
           {["All", "Audio", "Wearables", "Fashion", "Electronics"].map((option) => <option key={option}>{option}</option>)}
         </select>
       </div>
+
+      <ImageSearch />
+
       <div className="mt-8 flex items-center justify-between">
-        <p className="text-sm text-slate-500">{results.length} verified products</p>
+        <p className="data text-sm text-slate-500">{results.length} verified products</p>
         <p className="text-xs text-slate-400">Prices sourced from approved retailer feeds</p>
       </div>
       <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {results.map((p) => <ProductCard product={p} key={p.id} />)}
       </div>
-      {!results.length && <div className="card mt-4 p-10 text-center text-slate-500">No products match that search.</div>}
+      {!results.length && <div className="card mt-4 p-10 text-center text-slate-500">No products match that search — try widening your filters.</div>}
     </div>
   );
 }

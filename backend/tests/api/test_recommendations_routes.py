@@ -1,28 +1,39 @@
 """API tests: /api/v1/recommendations (explicit LLM engine, mocked) and /recommendations/personalized
 (embeddings-only engine, real pgvector search, only the search-logging embed call mocked)."""
-import json
-from unittest.mock import MagicMock, patch
-
-import pytest
+from unittest.mock import patch
 
 
-def test_explicit_recommendations_end_to_end_with_mocked_llm_and_embeddings(client, make_product) -> None:
-    product = make_product(title="Noise Cancelling Headphones", price_minor=15000, with_embedding=True)
+def test_explicit_recommendations_ranks_web_listings_with_best_pick_and_reviews(client) -> None:
+    """The engine sources every recommendation live from the web, ranked best-fit-first by the LLM's own
+    ordering (not just cheapest first) - and only the #1 ranked listing gets real reviews attached."""
+    from app.services.web_product_search import ReviewSnippet, WebProductListing
 
-    understanding_payload = {"ideal_product_description": "noise cancelling headphones for commuting", "max_price_minor": 20000, "brand": None}
-    ranking_payload = {"picks": [{"product_id": str(product.id), "reason": "Matches the stated budget and use case."}]}
+    best = WebProductListing(title="Sony WH-1000XM5", brand="Sony", retailer="Amazon.in", price=26990.0, currency="INR", image_url="https://example.com/sony.jpg", url="https://amazon.in/sony-wh1000xm5", reason="Class-leading noise cancellation within budget.")
+    second = WebProductListing(title="Bose QuietComfort 45", brand="Bose", retailer="Flipkart", price=24990.0, currency="INR", image_url=None, url="https://flipkart.com/bose-qc45", reason="Cheaper alternative with strong ANC.")
+    review = ReviewSnippet(source="GSMArena", quote="Excellent noise cancellation for the price.", url="https://gsmarena.com/sony-wh1000xm5-review")
 
-    with patch("app.services.recommendations.create_message", side_effect=[
-             MagicMock(stop_reason="end_turn", content=[MagicMock(text=json.dumps(understanding_payload))]),
-             MagicMock(stop_reason="end_turn", content=[MagicMock(text=json.dumps(ranking_payload))]),
-         ]), \
-         patch("app.services.recommendations.embed_query", return_value=[0.1] * 768):
-        response = client.post("/api/v1/recommendations", json={"purpose": "noise cancelling headphones for my commute", "budget": 200, "currency": "USD"})
+    with patch("app.services.recommendations.search_web_products", return_value=[best, second]), \
+         patch("app.services.recommendations.search_reviews", return_value=[review]) as mock_reviews:
+        response = client.post("/api/v1/recommendations", json={"purpose": "noise cancelling headphones for my commute", "budget": 30000})
 
     assert response.status_code == 200
     body = response.json()
-    assert len(body["items"]) == 1
-    assert body["items"][0]["product"]["title"] == "Noise Cancelling Headphones"
+    assert len(body["items"]) == 2
+    assert body["items"][0]["title"] == "Sony WH-1000XM5"
+    assert body["items"][0]["rank"] == 1
+    assert body["items"][0]["is_best_pick"] is True
+    assert body["items"][0]["reviews"] == [{"source": "GSMArena", "quote": "Excellent noise cancellation for the price.", "url": "https://gsmarena.com/sony-wh1000xm5-review"}]
+    assert body["items"][1]["rank"] == 2
+    assert body["items"][1]["is_best_pick"] is False
+    assert body["items"][1]["reviews"] == []
+    mock_reviews.assert_called_once_with("Sony WH-1000XM5", "Sony")
+
+
+def test_explicit_recommendations_with_no_web_results_is_404(client) -> None:
+    with patch("app.services.recommendations.search_web_products", return_value=[]):
+        response = client.post("/api/v1/recommendations", json={"purpose": "a completely obscure product"})
+
+    assert response.status_code == 404
 
 
 def test_explicit_recommendations_rejects_bad_currency(client) -> None:
