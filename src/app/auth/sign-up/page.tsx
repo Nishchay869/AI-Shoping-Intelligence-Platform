@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
+import { Icon } from "@/components/icons";
 import { supabase } from "@/shared/supabase/client";
 
 /** Registration calls Supabase Auth directly. With "Confirm email" disabled in the Supabase project's
@@ -35,15 +36,22 @@ export default function SignUpPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-slate-50 p-4">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-surface p-4">
+      <Link href="/" className="fixed left-4 top-4 inline-flex items-center gap-2 rounded-full py-1.5 pl-1.5 pr-4 text-sm font-semibold text-slate-500 transition-colors hover:text-brand-700 sm:left-6 sm:top-6">
+        <span className="shadow-neu-sm grid h-7 w-7 place-items-center rounded-full">
+          <Icon name="arrow" className="h-4 w-4 rotate-180" />
+        </span>
+        Back
+      </Link>
+
       <Link href="/" className="mb-8 flex flex-col items-center gap-1">
         <span className="flex items-center gap-2 text-xl font-bold text-brand-700">
-          <span className="grid h-9 w-9 place-items-center rounded-lg bg-brand-700 text-white">P</span>Pricewise
+          <span className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-brand-600 to-violet-600 text-white shadow-neu-brand">P</span>Pricewise
         </span>
         <span className="label-caps text-brand-600/70">AI Intelligence</span>
       </Link>
 
-      <section className="card w-full max-w-[420px] p-8">
+      <section className="surface-elevated w-full max-w-[420px] rounded-3xl p-8">
         <h1 className="text-2xl font-bold text-ink">Create your account</h1>
         <form onSubmit={submit} className="mt-6 space-y-4">
           <label className="block">

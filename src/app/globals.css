@@ -4,18 +4,68 @@
 
 @layer base {
   * { @apply border-slate-200; }
-  body { @apply bg-slate-50 text-ink antialiased; }
-  button, input { font: inherit; }
+  body {
+    /* Neumorphism needs one flat, uniform surface color everywhere - every "raised" or "pressed"
+     * element is this same tone plus a light/dark shadow pair, which is what sells the illusion
+     * that it's extruded from (or pressed into) the same material as the page. */
+    @apply bg-surface text-ink antialiased;
+  }
+  button, input, select { font: inherit; }
+  ::selection { background-color: rgba(79, 70, 229, 0.18); }
+
+  /* Respect user motion preferences app-wide rather than per-animation. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
 
 @layer components {
-  /* Depth comes from a 1px border, not shadow - shadow is reserved for hover/interactive lift only. */
-  .card { @apply rounded-3xl border border-slate-200 bg-white transition hover:shadow-card; }
-  .input { @apply h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-brand-600 focus:ring-4 focus:ring-brand-50; }
-  .btn-primary { @apply inline-flex h-10 items-center justify-center rounded-lg bg-brand-600 px-4 text-sm font-semibold text-white transition hover:bg-brand-700 focus:outline-none focus:ring-4 focus:ring-brand-50 disabled:cursor-not-allowed disabled:opacity-60; }
-  .btn-secondary { @apply inline-flex h-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-100; }
+  /* Raised soft-UI surface: same bg as the page, depth comes purely from the light/dark shadow pair. */
+  .card { @apply rounded-3xl border-0 bg-surface shadow-neu transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-neu-lg; }
+  /* Inputs read as pressed *into* the surface (concave), which is the neumorphic convention for fields. */
+  .input { @apply h-11 w-full rounded-xl border-0 bg-surface px-3 text-sm text-ink outline-none shadow-neu-inset-sm transition placeholder:text-slate-400 focus:shadow-neu-inset focus:ring-2 focus:ring-brand-300; }
+  .btn-primary { @apply inline-flex h-10 items-center justify-center rounded-xl bg-gradient-to-br from-brand-600 to-brand-700 px-4 text-sm font-semibold text-white shadow-neu-brand transition-all duration-200 hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-brand-200 active:scale-[0.97] active:shadow-neu-brand-inset disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100 disabled:active:shadow-neu-brand; }
+  .btn-secondary { @apply inline-flex h-10 items-center justify-center rounded-xl border-0 bg-surface px-4 text-sm font-semibold text-slate-700 shadow-neu-sm transition-all duration-200 hover:text-brand-700 focus:outline-none focus:ring-4 focus:ring-brand-100 active:scale-[0.97] active:shadow-neu-inset-sm; }
   /* For prices, ratings, table columns - JetBrains Mono with tabular figures so digits align. */
   .data { @apply font-mono tabular-nums; }
-  .label-caps { @apply text-xs font-bold uppercase tracking-wider text-slate-500; }
+  .label-caps { @apply text-xs font-bold uppercase tracking-wider text-slate-600; }
   .pill { @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold; }
+
+  /* Flat raised/elevated panels for nav chrome and floating surfaces (drawer, assistant, dropdowns). */
+  .surface-raised { @apply bg-surface shadow-neu; }
+  .surface-elevated { @apply bg-surface shadow-neu-lg; }
+  /* Pressed-in panel, used for the active-nav indicator and other "selected" states. */
+  .surface-pressed { @apply bg-surface shadow-neu-inset; }
+
+  .page-enter { @apply animate-fade-slide-up; }
+
+  /* Animated highlighter-style marker for calling out a key phrase in a headline - a soft translucent
+   * block that sweeps in behind the text left-to-right, like a highlighter pen. `background-size` (not
+   * `width`) animates so it's compositor-only (no layout thrash), and box-decoration-break + a radius
+   * make each line render as its own independently-rounded block if the marked phrase wraps, instead
+   * of one block spanning the gap between lines.
+   *
+   * Height is a fixed `0.85em`, NOT `100%`: a span's per-line fragment box is sized to the font's own
+   * (fairly tall) metrics, not the parent's `leading-*` value, so on a tight heading like this one
+   * (leading-[1.1]) that natural box is taller than the actual line-to-line spacing - "100%" measured
+   * ~65px against a ~53px line gap, so consecutive lines' highlights physically overlapped. 0.85em
+   * comfortably clears the tightest line-height this is used at (1.1em) with room on both sides. */
+  .text-mark {
+    @apply bg-gradient-to-r from-brand-400/30 to-violet-400/30 bg-no-repeat;
+    background-position: 0 50%;
+    background-size: 0% 0.85em;
+    border-radius: 0.25em;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    /* Horizontal-only padding: vertical padding on an inline element paints past the line's own
+     * height into the line above/below (since it isn't reserved in the line-height), which is what
+     * caused an earlier version's blocks to visibly overlap where lines met. */
+    padding: 0 0.15em;
+    margin: 0 -0.15em;
+  }
 }

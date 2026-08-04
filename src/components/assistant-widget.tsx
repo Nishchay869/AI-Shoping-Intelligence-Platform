@@ -33,11 +33,17 @@ function renderWithBold(text: string) {
  * memory, reachable by typing. */
 export function AssistantWidget() {
   const [open, setOpen] = useState(false);
+  const [closing, setClosing] = useState(false);
   const [messages, setMessages] = useState<Message[]>([{ role: "assistant", content: GREETING }]);
   const [value, setValue] = useState("");
   const [threadId, setThreadId] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  function closePanel() {
+    setClosing(true);
+    setTimeout(() => { setOpen(false); setClosing(false); }, 180);
+  }
 
   useEffect(() => {
     if (open) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -79,8 +85,8 @@ export function AssistantWidget() {
   return (
     <>
       {open && (
-        <div className="fixed bottom-24 right-6 z-50 flex h-[560px] w-[380px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-          <div className="flex items-center justify-between bg-brand-700 px-4 py-3 text-white">
+        <div className={`surface-elevated fixed bottom-24 right-6 z-50 flex h-[560px] w-[380px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-3xl ${closing ? "animate-scale-out" : "animate-scale-in"}`} style={{ transformOrigin: "bottom right" }}>
+          <div className="flex items-center justify-between bg-gradient-to-r from-brand-700 to-brand-600 px-4 py-3 text-white">
             <div className="flex items-center gap-3">
               <span className="grid h-8 w-8 place-items-center rounded-full bg-white/15"><Icon name="sparkles" className="h-4 w-4" /></span>
               <div>
@@ -88,13 +94,13 @@ export function AssistantWidget() {
                 <p className="label-caps text-brand-100">Always online</p>
               </div>
             </div>
-            <button aria-label="Close assistant" onClick={() => setOpen(false)} className="rounded-full p-1 hover:bg-white/20"><Icon name="x" className="h-5 w-5" /></button>
+            <button aria-label="Close assistant" onClick={closePanel} className="rounded-full p-1 transition-colors hover:bg-white/20"><Icon name="x" className="h-5 w-5" /></button>
           </div>
 
           {messages.length <= 1 && (
-            <div className="flex flex-wrap gap-1.5 border-b bg-slate-50 p-3">
+            <div className="flex flex-wrap gap-1.5 border-b border-slate-200/70 p-3">
               {SUGGESTIONS.map((suggestion) => (
-                <button key={suggestion} onClick={() => sendMessage(suggestion)} className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:border-brand-300 hover:text-brand-600">
+                <button key={suggestion} onClick={() => sendMessage(suggestion)} className="shadow-neu-sm rounded-full px-2.5 py-1 text-[11px] font-medium text-slate-600 transition-all hover:text-brand-600 active:shadow-neu-inset-sm">
                   {suggestion}
                 </button>
               ))}
@@ -104,17 +110,17 @@ export function AssistantWidget() {
           <div className="flex-1 space-y-4 overflow-y-auto p-4">
             {messages.map((message, index) => (
               <div key={index} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[85%] px-3 py-2 text-sm leading-6 shadow-sm ${message.role === "user" ? "rounded-2xl rounded-tr-sm bg-brand-600 text-white" : "rounded-2xl rounded-tl-sm bg-slate-100 text-ink"}`}>
+                <div className={`max-w-[85%] px-3 py-2 text-sm leading-6 ${message.role === "user" ? "rounded-2xl rounded-tr-sm bg-brand-600 text-white shadow-neu-sm" : "shadow-neu-inset-sm rounded-2xl rounded-tl-sm bg-surface text-ink"}`}>
                   <p className="whitespace-pre-wrap">{message.role === "assistant" ? renderWithBold(message.content) : message.content}</p>
                   {message.toolCalls && message.toolCalls.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1">
-                      {message.toolCalls.map((toolName, i) => <span key={`${toolName}-${i}`} className="pill bg-white/60 text-slate-500">{toolName}</span>)}
+                      {message.toolCalls.map((toolName, i) => <span key={`${toolName}-${i}`} className="pill bg-slate-200/70 text-slate-600">{toolName}</span>)}
                     </div>
                   )}
                   {message.sources && message.sources.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {message.sources.map((source) => (
-                        <a key={source.label} href={source.url} target="_blank" rel="noopener noreferrer" className="pill bg-white/60 text-blue-600 underline hover:text-blue-700" title={source.title}>
+                        <a key={source.label} href={source.url} target="_blank" rel="noopener noreferrer" className="pill bg-slate-200/70 text-blue-600 underline hover:text-blue-700" title={source.title}>
                           {source.label} ↗
                         </a>
                       ))}
@@ -123,11 +129,11 @@ export function AssistantWidget() {
                 </div>
               </div>
             ))}
-            {loading && <div className="flex justify-start"><p className="max-w-[85%] rounded-2xl rounded-tl-sm bg-slate-100 px-3 py-2 text-sm text-slate-400">Thinking…</p></div>}
+            {loading && <div className="flex justify-start"><p className="shadow-neu-inset-sm max-w-[85%] rounded-2xl rounded-tl-sm bg-surface px-3 py-2 text-sm text-slate-400">Thinking…</p></div>}
             <div ref={bottomRef} />
           </div>
 
-          <form onSubmit={handleSubmit} className="border-t p-3">
+          <form onSubmit={handleSubmit} className="border-t border-slate-200/70 p-3">
             <div className="flex gap-2">
               <label className="sr-only" htmlFor="assistant-widget-message">Ask the shopping assistant</label>
               <input id="assistant-widget-message" value={value} onChange={(event) => setValue(event.target.value)} className="input min-w-0 flex-1" placeholder="Ask me anything…" disabled={loading} />
@@ -151,7 +157,7 @@ export function AssistantWidget() {
         <button
           onClick={() => setOpen(true)}
           aria-label="Open AI shopping assistant"
-          className="fixed bottom-6 right-6 z-50 grid h-14 w-14 place-items-center rounded-full bg-brand-600 text-white shadow-lg transition hover:bg-brand-700"
+          className="fixed bottom-6 right-6 z-50 grid h-14 w-14 place-items-center rounded-full bg-gradient-to-br from-brand-600 to-violet-600 text-white shadow-neu-brand transition-all duration-200 hover:scale-110 active:scale-95 active:shadow-neu-brand-inset"
         >
           <Icon name="message" className="h-6 w-6" />
         </button>
