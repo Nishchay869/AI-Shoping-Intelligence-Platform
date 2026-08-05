@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { Icon } from "@/components/icons";
+import { PasswordInput } from "@/components/password-input";
 import { supabase } from "@/shared/supabase/client";
 
 /** Sign-in calls Supabase Auth directly; the resulting session (and its bearer access token) is what
@@ -51,11 +52,11 @@ export default function SignInPage() {
         <form onSubmit={submit} className="mt-6 space-y-4">
           <label className="block">
             <span className="label-caps">Email address</span>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input mt-2" placeholder="you@example.com" required />
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input mt-2" placeholder="you@gmail.com" required />
           </label>
           <label className="block">
             <span className="label-caps">Password</span>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="input mt-2" placeholder="••••••••" required />
+            <PasswordInput value={password} onChange={setPassword} placeholder="Test@123" required />
           </label>
           {error && <p className="text-sm text-rose-600">{error}</p>}
           <button className="btn-primary w-full gap-2" disabled={loading}>

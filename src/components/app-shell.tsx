@@ -6,7 +6,9 @@ import { useEffect, useRef, useState } from "react";
 import { AssistantWidget } from "./assistant-widget";
 import { Icon, type IconName } from "./icons";
 import { clearToken } from "@/shared/auth/token";
+import { displayNameFor, initialsFor } from "@/shared/auth/use-current-user";
 import { supabase } from "@/shared/supabase/client";
+import type { User } from "@supabase/supabase-js";
 
 const navigation: { href: string; label: string; icon: IconName }[] = [
   { href: "/dashboard", label: "Overview", icon: "home" },
@@ -72,6 +74,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [closing, setClosing] = useState(false);
   const [authorized, setAuthorized] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -81,10 +84,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         router.replace("/auth/sign-in");
         return;
       }
+      setUser(data.session.user);
       setAuthorized(true);
     });
     return () => { active = false; };
   }, [router]);
+
+  const name = displayNameFor(user);
 
   async function signOut() { await clearToken(); router.push("/auth/sign-in"); }
 
@@ -156,10 +162,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </button>
             <Link href="/profile" className="hidden items-center gap-3 pl-4 sm:flex md:pl-6">
               <span className="text-right leading-tight">
-                <span className="label-caps block text-slate-700">Nishchay</span>
+                <span className="label-caps block text-slate-700">{name}</span>
                 <span className="block text-[10px] tracking-wide text-slate-400">MEMBER</span>
               </span>
-              <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-brand-100 to-brand-200 text-sm font-bold text-brand-700 shadow-neu-sm">NS</span>
+              <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-brand-100 to-brand-200 text-sm font-bold text-brand-700 shadow-neu-sm">{initialsFor(name)}</span>
             </Link>
             <button aria-label="Sign out" onClick={signOut} className="text-slate-500 transition-colors hover:text-rose-600"><Icon name="logout" className="h-5 w-5" /></button>
           </div>

@@ -1,8 +1,10 @@
 "use client";
 import { useState } from "react";
+import { displayNameFor, useCurrentUser } from "@/shared/auth/use-current-user";
 /** Profile page manages user-visible preferences and explicit notification consent. */
 export default function ProfilePage() {
   const [saved, setSaved] = useState(false);
+  const user = useCurrentUser();
   return (
     <div className="max-w-3xl">
       <p className="label-caps text-brand-600">Account</p>
@@ -11,8 +13,9 @@ export default function ProfilePage() {
       <section className="card mt-8 p-6">
         <h2 className="text-lg font-bold text-ink">Personal details</h2>
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          <label className="block"><span className="label-caps">Name</span><input className="input mt-2" defaultValue="Nischay" /></label>
-          <label className="block"><span className="label-caps">Email</span><input className="input mt-2" type="email" defaultValue="nischay@example.com" /></label>
+          {/* key remounts the (uncontrolled) input once the real user loads, so its defaultValue - only applied on mount - picks up the fetched name/email instead of staying blank. */}
+          <label className="block"><span className="label-caps">Name</span><input key={user?.id ?? "loading"} className="input mt-2" defaultValue={displayNameFor(user)} /></label>
+          <label className="block"><span className="label-caps">Email</span><input key={user?.id ?? "loading"} className="input mt-2" type="email" defaultValue={user?.email ?? ""} /></label>
         </div>
       </section>
 

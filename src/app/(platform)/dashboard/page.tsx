@@ -1,13 +1,16 @@
+"use client";
 import Link from "next/link";
 import Image from "next/image";
 import { ProductCard } from "@/components/ui";
 import { Icon, type IconName } from "@/components/icons";
 import { products, formatPrice } from "@/lib/mock-data";
+import { displayNameFor, useCurrentUser } from "@/shared/auth/use-current-user";
 
 const drops = products.filter((p) => p.trend === "down");
 
 /** Dashboard summarizes tracked offers and routes users to their most useful next action. */
 export default function DashboardPage() {
+  const name = displayNameFor(useCurrentUser());
   const stats: { label: string; value: string; icon: IconName; emphasize?: boolean }[] = [
     { label: "WISHLIST ITEMS", value: "12", icon: "heart" },
     { label: "ACTIVE ALERTS", value: `${drops.length}`, icon: "trend" },
@@ -18,7 +21,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       <section>
-        <h1 className="text-3xl font-bold text-ink">Welcome back, Nischay</h1>
+        <h1 className="text-3xl font-bold text-ink">Welcome back{name && `, ${name}`}</h1>
         <div className="mt-2 flex items-center gap-2">
           <span className="flex h-2 w-2 animate-pulse rounded-full bg-brand-600" />
           <p className="text-slate-500">{drops.length} price drops this week on items you&apos;re watching</p>
