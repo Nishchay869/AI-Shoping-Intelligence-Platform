@@ -1,7 +1,7 @@
 import { SiteNav } from "@/components/site-nav";
 import { SiteFooter } from "@/components/site-footer";
 
-export const metadata = { title: "Cookie Policy | Pricewise" };
+export const metadata = { title: "Cookie Policy | AI Shopping Intelligence Platform" };
 
 export default function CookiesPage() {
   return (
@@ -24,7 +24,7 @@ export default function CookiesPage() {
               <section>
                 <h2 className="mb-3 text-xl font-bold text-ink">2. How we use cookies</h2>
                 <p className="leading-7 text-slate-600">
-                  Pricewise uses strictly necessary cookies to keep you signed in and to protect your session. We do not use third-party advertising or tracking cookies.
+                  AI Shopping Intelligence Platform uses strictly necessary cookies to keep you signed in and to protect your session. We do not use third-party advertising or tracking cookies.
                 </p>
               </section>
               <section>
@@ -37,7 +37,7 @@ export default function CookiesPage() {
               <section>
                 <h2 className="mb-3 text-xl font-bold text-ink">4. Managing cookies</h2>
                 <p className="leading-7 text-slate-600">
-                  Most browsers let you block or delete cookies in their settings. Blocking essential cookies will prevent you from staying signed in to Pricewise.
+                  Most browsers let you block or delete cookies in their settings. Blocking essential cookies will prevent you from staying signed in to AI Shopping Intelligence Platform.
                 </p>
               </section>
               <section>

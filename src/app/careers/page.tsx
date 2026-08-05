@@ -16,7 +16,7 @@ const PERKS = [
   "A small team where your work ships fast"
 ];
 
-export const metadata = { title: "Careers | Pricewise" };
+export const metadata = { title: "Careers | AI Shopping Intelligence Platform" };
 
 export default function CareersPage() {
   return (

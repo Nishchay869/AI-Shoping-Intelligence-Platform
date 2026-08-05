@@ -8,7 +8,7 @@ const CHANNELS: { icon: IconName; title: string; body: string; action: { label: 
   { icon: "shield", title: "Privacy & data", body: "Questions about how your data is handled, or a request under our privacy policy.", action: { label: "privacy@pricewise.app", href: "mailto:privacy@pricewise.app" } }
 ];
 
-export const metadata = { title: "Contact | Pricewise" };
+export const metadata = { title: "Contact | AI Shopping Intelligence Platform" };
 
 export default function ContactPage() {
   return (

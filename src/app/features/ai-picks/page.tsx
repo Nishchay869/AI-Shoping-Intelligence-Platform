@@ -24,7 +24,7 @@ function AiPicksMockup() {
   );
 }
 
-export const metadata = { title: "AI Picks | Pricewise" };
+export const metadata = { title: "AI Picks | AI Shopping Intelligence Platform" };
 
 export default function AiPicksFeaturePage() {
   return (

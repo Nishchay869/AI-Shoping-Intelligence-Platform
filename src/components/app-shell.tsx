@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -94,9 +95,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const logo = (
     <Link href="/dashboard" className="mb-8 flex items-center gap-3 px-3">
-      <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-brand-600 to-violet-600 text-white shadow-neu-brand"><Icon name="sparkles" className="h-5 w-5" /></span>
+      <Image src="/logo-icon.png" alt="" width={40} height={40} className="h-10 w-10" priority />
       <span>
-        <span className="block text-lg font-bold text-brand-700">Pricewise</span>
+        <span className="block text-lg font-bold text-brand-700">Shopping AI</span>
         <span className="label-caps block text-brand-600/70">AI Intelligence</span>
       </span>
     </Link>

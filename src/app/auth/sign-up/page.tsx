@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
@@ -46,7 +47,7 @@ export default function SignUpPage() {
 
       <Link href="/" className="mb-8 flex flex-col items-center gap-1">
         <span className="flex items-center gap-2 text-xl font-bold text-brand-700">
-          <span className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-brand-600 to-violet-600 text-white shadow-neu-brand">P</span>Pricewise
+          <Image src="/logo-icon.png" alt="" width={36} height={36} className="h-9 w-9" priority />Shopping AI
         </span>
         <span className="label-caps text-brand-600/70">AI Intelligence</span>
       </Link>

@@ -37,7 +37,7 @@ function DiscoverMockup() {
   );
 }
 
-export const metadata = { title: "Discover | Pricewise" };
+export const metadata = { title: "Discover | AI Shopping Intelligence Platform" };
 
 export default function DiscoverFeaturePage() {
   return (
@@ -63,7 +63,7 @@ export default function DiscoverFeaturePage() {
         { q: "Which categories can I search?", a: "Discover covers electronics, fashion, wearables, books, and home goods, with more categories added as the catalog grows." },
         { q: "Can I really search by photo?", a: "Yes - upload any product photo and Discover finds visually similar items already indexed in the catalog." },
         { q: "How fresh are the prices shown?", a: "Prices are sourced from approved retailer feeds and refreshed regularly, so what you see closely tracks what you'd pay at checkout." },
-        { q: "Can I save a search for later?", a: "Save any individual product to your wishlist from its result card, and Pricewise will track its price for you." }
+        { q: "Can I save a search for later?", a: "Save any individual product to your wishlist from its result card, and Shopping AI will track its price for you." }
       ]}
     />
   );

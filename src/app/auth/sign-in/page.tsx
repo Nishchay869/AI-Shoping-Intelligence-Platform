@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
@@ -39,7 +40,7 @@ export default function SignInPage() {
 
       <Link href="/" className="mb-8 flex flex-col items-center gap-1">
         <span className="flex items-center gap-2 text-xl font-bold text-brand-700">
-          <span className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-brand-600 to-violet-600 text-white shadow-neu-brand">P</span>Pricewise
+          <Image src="/logo-icon.png" alt="" width={36} height={36} className="h-9 w-9" priority />Shopping AI
         </span>
         <span className="label-caps text-brand-600/70">AI Intelligence</span>
       </Link>
@@ -63,7 +64,7 @@ export default function SignInPage() {
         </form>
       </section>
 
-      <p className="mt-8 text-sm text-slate-500">New to Pricewise? <Link href="/auth/sign-up" className="font-bold text-brand-700 hover:underline">Create an account</Link></p>
+      <p className="mt-8 text-sm text-slate-500">New to Shopping AI? <Link href="/auth/sign-up" className="font-bold text-brand-700 hover:underline">Create an account</Link></p>
     </main>
   );
 }

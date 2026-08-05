@@ -15,7 +15,7 @@ const STATS = [
   { value: "2024", label: "Founded" }
 ];
 
-export const metadata = { title: "About | Pricewise" };
+export const metadata = { title: "About | AI Shopping Intelligence Platform" };
 
 export default function AboutPage() {
   return (
@@ -24,10 +24,10 @@ export default function AboutPage() {
       <main className="page-enter pt-28">
         <section className="py-24">
           <div className="mx-auto max-w-3xl px-4 text-center sm:px-8">
-            <p className="label-caps text-brand-600">About Pricewise</p>
+            <p className="label-caps text-brand-600">About AI Shopping Intelligence Platform</p>
             <h1 className="mt-2 text-4xl font-bold text-ink lg:text-5xl">Shopping intelligence, built to save you time and money.</h1>
             <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-slate-600">
-              Pricewise started with a simple frustration: comparing prices and reviews across a dozen tabs before every purchase. We built the tool we wished existed - one place that reads the reviews, tracks the prices, and tells you straight what&apos;s actually worth buying.
+              AI Shopping Intelligence Platform started with a simple frustration: comparing prices and reviews across a dozen tabs before every purchase. We built the tool we wished existed - one place that reads the reviews, tracks the prices, and tells you straight what&apos;s actually worth buying.
             </p>
           </div>
         </section>

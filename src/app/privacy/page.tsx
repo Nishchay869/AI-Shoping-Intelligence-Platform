@@ -1,7 +1,7 @@
 import { SiteNav } from "@/components/site-nav";
 import { SiteFooter } from "@/components/site-footer";
 
-export const metadata = { title: "Privacy Policy | Pricewise" };
+export const metadata = { title: "Privacy Policy | AI Shopping Intelligence Platform" };
 
 export default function PrivacyPage() {
   return (
@@ -18,7 +18,7 @@ export default function PrivacyPage() {
               <section>
                 <h2 className="mb-3 text-xl font-bold text-ink">1. Information we collect</h2>
                 <p className="leading-7 text-slate-600">
-                  When you create an account, we collect your name and email address. When you use Pricewise, we store the products you search for, save to your wishlist, or ask about through Shopping Chat, so we can track prices and personalize recommendations on your behalf. If you use the receipt scanner, the receipt image and the details extracted from it are stored on your account.
+                  When you create an account, we collect your name and email address. When you use AI Shopping Intelligence Platform, we store the products you search for, save to your wishlist, or ask about through Shopping Chat, so we can track prices and personalize recommendations on your behalf. If you use the receipt scanner, the receipt image and the details extracted from it are stored on your account.
                 </p>
               </section>
               <section>

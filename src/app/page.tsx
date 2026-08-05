@@ -19,7 +19,7 @@ const FEATURES: { icon: IconName; title: string; body: string; wide?: boolean }[
 
 const USE_CASES: { icon: IconName; title: string; body: string; flow: string[] }[] = [
   { icon: "cpu", title: "Big-ticket electronics", body: "Laptops, TVs, headphones - the purchases you research for weeks before buying.", flow: ["Compare specs", "Read AI review summary", "Buy at the best price"] },
-  { icon: "bag", title: "Fashion & lifestyle", body: "Save what you love and let Pricewise watch the price for you.", flow: ["Save to wishlist", "Get a price-drop alert", "Check out"] },
+  { icon: "bag", title: "Fashion & lifestyle", body: "Save what you love and let Shopping AI watch the price for you.", flow: ["Save to wishlist", "Get a price-drop alert", "Check out"] },
   { icon: "gift", title: "Gifting made easy", body: "Describe who it's for and what you'd like to spend - get a shortlist in seconds.", flow: ["Describe the recipient", "Get ranked AI picks", "Order in minutes"] },
   { icon: "shield", title: "Warranty & spending", body: "Snap a receipt and never lose track of a warranty claim window again.", flow: ["Scan your receipt", "Auto-track warranty", "Get renewal alerts"] }
 ];
@@ -40,11 +40,11 @@ const TESTIMONIALS = [
 ];
 
 const FAQS = [
-  { q: "Is Pricewise free to use?", a: "Yes - creating an account and using price tracking, AI recommendations, and Shopping Chat is free." },
-  { q: "Which stores does Pricewise compare?", a: "Pricewise tracks listings across major Indian retailers, including Amazon, Flipkart, Myntra, Ajio, Nykaa, Croma, Meesho, Tata CLiQ, and Reliance Digital." },
+  { q: "Is Shopping AI free to use?", a: "Yes - creating an account and using price tracking, AI recommendations, and Shopping Chat is free." },
+  { q: "Which stores does Shopping AI compare?", a: "Shopping AI tracks listings across major Indian retailers, including Amazon, Flipkart, Myntra, Ajio, Nykaa, Croma, Meesho, Tata CLiQ, and Reliance Digital." },
   { q: "How does the AI recommendation engine work?", a: "Describe your budget, purpose, and must-have features - the engine ranks matching products from the live catalog and explains each pick in plain English." },
   { q: "Is my data safe?", a: "Your account data is protected with industry-standard authentication and encryption, and is never sold to third parties." },
-  { q: "Can I get notified about a specific price drop?", a: "Yes - save any product to your wishlist and Pricewise will track its price and alert you when it drops." }
+  { q: "Can I get notified about a specific price drop?", a: "Yes - save any product to your wishlist and Shopping AI will track its price and alert you when it drops." }
 ];
 
 /** Marketing landing page; authenticated dashboard routes can be added without changing domain code.
@@ -64,15 +64,22 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
         )}
 
         {/* Hero */}
-        <section className="py-24">
+        <section className="relative overflow-hidden py-24">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 -top-32 -z-10 h-[36rem]"
+            style={{
+              background:
+                "radial-gradient(38% 55% at 22% 20%, rgba(129,140,248,0.30), transparent 70%), radial-gradient(30% 45% at 75% 10%, rgba(167,139,250,0.24), transparent 70%)"
+            }}
+          />
           <div className="mx-auto flex max-w-7xl flex-col items-center gap-16 px-4 sm:px-8 lg:flex-row">
             <div className="z-10 flex-1 space-y-8">
               <span className="pill gap-1.5 bg-brand-100 text-brand-700">
                 <Icon name="sparkles" className="h-3.5 w-3.5" /> Next-gen intelligence
               </span>
               <h1 className="text-4xl leading-tight text-ink lg:text-5xl lg:leading-[1.1]" style={{ textWrap: "balance" }}>
-                Make confident purchase decisions with{" "}
-                <span className="text-mark animate-mark-highlight">AI-powered price intelligence</span>.
+                Make confident purchase decisions with <b >AI-powered price intelligence</b>.
               </h1>
               <p className="max-w-xl text-lg leading-8 text-slate-600">
                 Compare prices across retailers, read AI-summarized reviews, and get personalized recommendations tailored to your budget and needs.
@@ -81,8 +88,27 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
                 <Link href="/auth/sign-in" className="btn-primary px-8">Sign in</Link>
                 <Link href="#how-it-works" className="btn-secondary px-8">See how it works</Link>
               </div>
+              <div className="flex items-center gap-3 pt-2">
+                <div className="flex">
+                  {["N", "I", "S", "H"].map((initial) => (
+                    <span
+                      key={initial}
+                      className="-ml-2.5 grid h-8 w-8 place-items-center rounded-full border-2 border-surface bg-gradient-to-br from-brand-100 to-brand-200 text-xs font-extrabold text-brand-700 first:ml-0"
+                    >
+                      {initial}
+                    </span>
+                  ))}
+                </div>
+                <p className="text-sm text-slate-600">
+                  <span className="data font-bold text-ink">4.8★</span> from <span className="data font-bold text-ink">12,000+</span> shoppers this year
+                </p>
+              </div>
             </div>
             <div className="relative flex-1">
+              <div className="card absolute -left-4 -top-20 z-0 w-56 -rotate-6 space-y-1 p-4 opacity-90">
+                <p className="label-caps text-slate-500">Flipkart</p>
+                <p className="data text-lg font-extrabold text-slate-400 line-through">₹34,999</p>
+              </div>
               <div className="card relative z-10 animate-float-slow space-y-4 p-6">
                 <div className="flex items-center justify-between">
                   <span className="label-caps text-brand-700">AI Picks · #1 match</span>
@@ -91,6 +117,10 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
                 <p className="text-lg font-bold text-ink">Sony WH-1000XM5</p>
                 <p className="data text-3xl font-extrabold text-brand-700">$328.00</p>
                 <p className="shadow-neu-inset-sm rounded-lg p-3 text-sm text-slate-600">Matches your $350 budget with class-leading noise cancellation and 30-hour battery life.</p>
+              </div>
+              <div className="absolute -right-2 bottom-6 z-20 flex animate-float-slow items-center gap-1.5 rounded-full bg-ink px-3.5 py-2 text-xs font-extrabold text-emerald-300 shadow-xl [animation-delay:0.4s]">
+                <Icon name="trend" className="h-3.5 w-3.5 rotate-180" />
+                12% this week
               </div>
             </div>
           </div>
@@ -142,7 +172,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
           <div className="mx-auto max-w-7xl px-4 sm:px-8">
             <Reveal className="mb-16 space-y-4 text-center">
               <h2 className="text-3xl font-bold text-ink">Built around how you actually shop</h2>
-              <p className="mx-auto max-w-2xl text-slate-600">Whatever you&apos;re buying, Pricewise adapts the flow to fit.</p>
+              <p className="mx-auto max-w-2xl text-slate-600">Whatever you&apos;re buying, Shopping AI adapts the flow to fit.</p>
             </Reveal>
             <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
               {USE_CASES.map((useCase, index) => (
@@ -169,14 +199,14 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
         </section>
 
         {/* Trusted retailer strip - floating marquee */}
-        <section className="overflow-hidden py-16">
+        <section className="py-16">
           <Reveal className="mx-auto mb-10 max-w-7xl px-4 text-center sm:px-8">
             <p className="label-caps text-brand-600">Compare across the stores you already shop</p>
             <h2 className="mt-2 text-2xl font-bold text-ink sm:text-3xl">Every price, one place</h2>
           </Reveal>
-          <div className="relative">
-            <div aria-hidden className="pointer-events-none absolute inset-y-0 left-0 z-10 w-24 bg-gradient-to-r from-surface to-transparent" />
-            <div aria-hidden className="pointer-events-none absolute inset-y-0 right-0 z-10 w-24 bg-gradient-to-l from-surface to-transparent" />
+          <div className="relative mx-auto max-w-7xl overflow-hidden px-4 sm:px-8">
+            <div aria-hidden className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-surface to-transparent sm:w-24" />
+            <div aria-hidden className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-surface to-transparent sm:w-24" />
             <div className="flex w-max animate-marquee gap-4 hover:[animation-play-state:paused]">
               {[...RETAILERS, ...RETAILERS].map((name, index) => (
                 <span key={`${name}-${index}`} className="shadow-neu-sm flex shrink-0 items-center rounded-2xl px-8 py-4 text-lg font-bold tracking-tight text-slate-500">
@@ -208,7 +238,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
           <div className="mx-auto max-w-7xl px-4 sm:px-8">
             <Reveal className="mb-16 space-y-4 text-center">
               <h2 className="text-3xl font-bold text-ink">Shoppers like what they see</h2>
-              <p className="mx-auto max-w-2xl text-slate-600">A few words from people using Pricewise to shop smarter.</p>
+              <p className="mx-auto max-w-2xl text-slate-600">A few words from people using Shopping AI to shop smarter.</p>
             </Reveal>
             <div className="grid gap-6 md:grid-cols-3">
               {TESTIMONIALS.map((testimonial, index) => (

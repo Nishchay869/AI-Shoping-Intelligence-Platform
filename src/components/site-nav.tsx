@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Icon, type IconName } from "./icons";
 
@@ -22,8 +23,8 @@ export function SiteNav() {
     <div className="animate-nav-in fixed inset-x-0 top-4 z-50 px-4 sm:top-5 sm:px-6">
       <nav className="surface-raised mx-auto flex h-16 max-w-7xl items-center justify-between rounded-full pl-4 pr-3 sm:pl-6 sm:pr-4">
         <Link href="/" className="flex shrink-0 items-center gap-2 text-lg font-bold text-brand-700">
-          <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-brand-600 to-violet-600 text-white shadow-neu-brand">P</span>
-          <span className="hidden sm:inline">Pricewise</span>
+          <Image src="/logo-icon.png" alt="" width={36} height={36} className="h-9 w-9" priority />
+          <span className="hidden sm:inline">Shopping AI</span>
         </Link>
 
         <div className="hidden items-center lg:flex">

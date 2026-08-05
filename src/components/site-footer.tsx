@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Icon, type IconName } from "./icons";
 
@@ -48,8 +49,8 @@ export function SiteFooter() {
         <div className="grid gap-12 lg:grid-cols-[2fr_1fr_1fr_1fr]">
           <div>
             <Link href="/" className="flex items-center gap-2 text-lg font-bold text-brand-700">
-              <span className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-brand-600 to-violet-600 text-white shadow-neu-brand">P</span>
-              Pricewise
+              <Image src="/logo-icon.png" alt="" width={36} height={36} className="h-9 w-9" />
+              AI Shopping Intelligence Platform
             </Link>
             <p className="mt-4 max-w-xs text-sm leading-6 text-slate-500">
               AI-powered price intelligence that helps you compare, decide, and buy with confidence - across every store you shop.
@@ -59,7 +60,7 @@ export function SiteFooter() {
                 <a
                   key={social.label}
                   href="#"
-                  aria-label={`Pricewise on ${social.label}`}
+                  aria-label={`AI Shopping Intelligence Platform on ${social.label}`}
                   className="shadow-neu-sm grid h-10 w-10 place-items-center rounded-full text-slate-500 transition-all hover:text-brand-600 active:shadow-neu-inset-sm"
                 >
                   <Icon name={social.icon} className="h-4 w-4" />
@@ -83,7 +84,7 @@ export function SiteFooter() {
         </div>
 
         <div className="mt-14 flex flex-col items-center justify-between gap-4 border-t border-slate-200/70 pt-8 sm:flex-row">
-          <p className="text-sm text-slate-500">© {new Date().getFullYear()} Pricewise. All rights reserved.</p>
+          <p className="text-sm text-slate-500">© {new Date().getFullYear()} AI Shopping Intelligence Platform. All rights reserved.</p>
           <p className="text-xs text-slate-400">Made for shoppers who like a good deal.</p>
         </div>
       </div>

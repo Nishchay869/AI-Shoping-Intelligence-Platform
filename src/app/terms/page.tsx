@@ -1,7 +1,7 @@
 import { SiteNav } from "@/components/site-nav";
 import { SiteFooter } from "@/components/site-footer";
 
-export const metadata = { title: "Terms of Service | Pricewise" };
+export const metadata = { title: "Terms of Service | AI Shopping Intelligence Platform" };
 
 export default function TermsPage() {
   return (
@@ -18,13 +18,13 @@ export default function TermsPage() {
               <section>
                 <h2 className="mb-3 text-xl font-bold text-ink">1. Acceptance of terms</h2>
                 <p className="leading-7 text-slate-600">
-                  By creating a Pricewise account or using any part of the service, you agree to these terms. If you don&apos;t agree with them, please don&apos;t use the service.
+                  By creating an AI Shopping Intelligence Platform account or using any part of the service, you agree to these terms. If you don&apos;t agree with them, please don&apos;t use the service.
                 </p>
               </section>
               <section>
                 <h2 className="mb-3 text-xl font-bold text-ink">2. Using the service</h2>
                 <p className="leading-7 text-slate-600">
-                  Pricewise provides price comparison, AI-generated recommendations, review summaries, and related tools for personal, non-commercial use. Prices, availability, and specifications are sourced from third-party retailers and can change or be inaccurate - always confirm final details on the retailer&apos;s own site before purchasing.
+                  AI Shopping Intelligence Platform provides price comparison, AI-generated recommendations, review summaries, and related tools for personal, non-commercial use. Prices, availability, and specifications are sourced from third-party retailers and can change or be inaccurate - always confirm final details on the retailer&apos;s own site before purchasing.
                 </p>
               </section>
               <section>
@@ -42,13 +42,13 @@ export default function TermsPage() {
               <section>
                 <h2 className="mb-3 text-xl font-bold text-ink">5. Intellectual property</h2>
                 <p className="leading-7 text-slate-600">
-                  The Pricewise name, product, and design are owned by us. Product names, brand names, and retailer names referenced on the platform belong to their respective owners.
+                  The AI Shopping Intelligence Platform name, product, and design are owned by us. Product names, brand names, and retailer names referenced on the platform belong to their respective owners.
                 </p>
               </section>
               <section>
                 <h2 className="mb-3 text-xl font-bold text-ink">6. Limitation of liability</h2>
                 <p className="leading-7 text-slate-600">
-                  Pricewise is provided &ldquo;as is.&rdquo; We work to keep pricing and product data accurate, but we aren&apos;t liable for losses arising from outdated prices, third-party retailer errors, or decisions made based on AI-generated content.
+                  AI Shopping Intelligence Platform is provided &ldquo;as is.&rdquo; We work to keep pricing and product data accurate, but we aren&apos;t liable for losses arising from outdated prices, third-party retailer errors, or decisions made based on AI-generated content.
                 </p>
               </section>
               <section>

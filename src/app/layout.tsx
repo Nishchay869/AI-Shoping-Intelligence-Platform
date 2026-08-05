@@ -7,7 +7,7 @@ const manrope = Manrope({ subsets: ["latin"], variable: "--font-sans", display: 
 const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "Pricewise | Shopping Intelligence",
+  title: "AI Shopping Intelligence Platform",
   description: "Track prices and make better buying decisions."
 };
 

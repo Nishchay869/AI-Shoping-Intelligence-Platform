@@ -22,7 +22,7 @@ function ChatMockup() {
   );
 }
 
-export const metadata = { title: "Shopping Chat | Pricewise" };
+export const metadata = { title: "Shopping Chat | AI Shopping Intelligence Platform" };
 
 export default function ShoppingChatFeaturePage() {
   return (
