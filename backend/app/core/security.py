@@ -5,7 +5,9 @@ implemented - a dual algorithm path would be dead code here and a key-confusion 
 carelessly.
 """
 from functools import lru_cache
+from ssl import SSLContext, create_default_context
 from typing import Any
+import certifi
 import jwt
 from app.core.config import get_settings
 
@@ -13,9 +15,17 @@ from app.core.config import get_settings
 @lru_cache
 def _jwks_client() -> jwt.PyJWKClient:
     """One process-lifetime JWKS client - caches fetched keys (~5 min) and auto-refreshes on an
-    unrecognized kid, so this is roughly one call to Supabase per 5 minutes per process, not per request."""
+    unrecognized kid, so this is roughly one call to Supabase per 5 minutes per process, not per request.
+
+    The verify context is built from certifi's CA bundle explicitly rather than the OS default trust
+    store: some local Python installs (notably python.org's macOS builds, unlike the Docker image this
+    ships in) don't have a working default trust store, which fails this fetch with
+    CERTIFICATE_VERIFY_FAILED. Pinning to certifi verifies against the exact same real CA set either
+    way - it does not weaken verification, just makes it independent of host trust-store configuration.
+    """
     settings = get_settings()
-    return jwt.PyJWKClient(f"{settings.supabase_url.rstrip('/')}/auth/v1/.well-known/jwks.json")
+    verify_context: SSLContext = create_default_context(cafile=certifi.where())
+    return jwt.PyJWKClient(f"{settings.supabase_url.rstrip('/')}/auth/v1/.well-known/jwks.json", ssl_context=verify_context)
 
 
 def verify_supabase_token(token: str) -> dict[str, Any]:

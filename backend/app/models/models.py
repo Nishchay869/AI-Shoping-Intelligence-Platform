@@ -24,6 +24,46 @@ class User(TimestampMixin, Base):
     wishlists: Mapped[list["Wishlist"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
 
+class NotificationFrequency(str, enum.Enum):
+    INSTANT = "instant"
+    DAILY_DIGEST = "daily_digest"
+    WEEKLY_SUMMARY = "weekly_summary"
+
+
+class BudgetTier(str, enum.Enum):
+    BUDGET = "budget"
+    BALANCED = "balanced"
+    PREMIUM = "premium"
+
+
+class UserPreferences(TimestampMixin, Base):
+    """One row per user: alert trigger rules, AI shopping persona, and smart-rule toggles that drive the
+    profile page's settings UI. JIT-created on first access (see services/preferences.get_or_create),
+    same idea as how `users` itself is JIT-provisioned from a verified Supabase token."""
+    __tablename__ = "user_preferences"
+    user_id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    notify_email: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    notify_push: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    notify_sms: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    notify_whatsapp: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    phone_number: Mapped[str | None] = mapped_column(String(20))
+    phone_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    phone_otp_hash: Mapped[str | None] = mapped_column(String(64))
+    phone_otp_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    min_discount_percentage: Mapped[float | None] = mapped_column(Numeric(5, 2))
+    alert_all_time_low: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    alert_below_90d_average: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    notification_frequency: Mapped[NotificationFrequency] = mapped_column(SAEnum(NotificationFrequency, name="notification_frequency", create_type=False, values_callable=lambda enum_cls: [member.value for member in enum_cls]), default=NotificationFrequency.INSTANT, nullable=False)
+    favorite_brands: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default=text("'[]'::jsonb"), nullable=False)
+    blacklisted_brands: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default=text("'[]'::jsonb"), nullable=False)
+    preferred_retailers: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default=text("'[]'::jsonb"), nullable=False)
+    budget_tier: Mapped[BudgetTier | None] = mapped_column(SAEnum(BudgetTier, name="budget_tier", create_type=False, values_callable=lambda enum_cls: [member.value for member in enum_cls]))
+    sizing_profile: Mapped[dict] = mapped_column(JSONB, default=dict, server_default=text("'{}'::jsonb"), nullable=False)
+    include_refurbished: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    restock_alerts_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    auto_buy_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+
 class Product(TimestampMixin, Base):
     __tablename__ = "products"
     id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)

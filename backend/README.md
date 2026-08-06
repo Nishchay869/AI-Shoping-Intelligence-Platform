@@ -38,6 +38,9 @@ on every call to this backend.
 | GET/POST | `/api/v1/wishlists` | Read/create private wishlists |
 | POST | `/api/v1/wishlists/{id}/items` | Add tracked product |
 | DELETE | `/api/v1/wishlists/{id}/items/{itemId}` | Remove owned item |
+| GET/PATCH | `/api/v1/preferences` | Read/update alert rules, AI persona, and smart-rule settings |
+| POST | `/api/v1/preferences/phone/verify` | Generate a phone verification code (no SMS provider configured yet - see `services/preferences.py`) |
+| POST | `/api/v1/preferences/phone/confirm` | Confirm a phone verification code |
 
 ## Database
 
