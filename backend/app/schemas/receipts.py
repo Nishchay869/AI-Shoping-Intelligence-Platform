@@ -21,6 +21,7 @@ class ReceiptResponse(BaseModel):
     total_minor: int | None
     currency: str
     warranty_text: str | None
+    warranty_expires_at: date | None
     ocr_confidence: float | None
     items: list[ReceiptItemResponse]
     created_at: datetime

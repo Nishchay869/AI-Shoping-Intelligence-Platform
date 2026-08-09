@@ -41,6 +41,8 @@ on every call to this backend.
 | GET/PATCH | `/api/v1/preferences` | Read/update alert rules, AI persona, and smart-rule settings |
 | POST | `/api/v1/preferences/phone/verify` | Generate a phone verification code (no SMS provider configured yet - see `services/preferences.py`) |
 | POST | `/api/v1/preferences/phone/confirm` | Confirm a phone verification code |
+| GET | `/api/v1/webhooks/whatsapp` | Meta Cloud API subscription verification handshake |
+| POST | `/api/v1/webhooks/whatsapp` | Meta Cloud API delivery-status callbacks and inbound `STOP` opt-out (HMAC-verified, no user auth) |
 
 ## Database
 

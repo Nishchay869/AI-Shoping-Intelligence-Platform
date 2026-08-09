@@ -18,6 +18,13 @@ class Settings(BaseSettings):
     embedding_dimensions: int = 768
     assistant_chat_model: str = "gemini-3.1-flash-lite"
     assistant_embedding_model: str = "models/gemini-embedding-001"
+    whatsapp_access_token: str = ""
+    whatsapp_phone_number_id: str = ""
+    whatsapp_verify_token: str = ""
+    whatsapp_app_secret: str = ""
+    whatsapp_api_version: str = "v21.0"
+    whatsapp_price_alert_template: str = "price_drop_alert"
+    whatsapp_warranty_alert_template: str = "warranty_expiring_alert"
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False, extra="ignore")
 
     @property

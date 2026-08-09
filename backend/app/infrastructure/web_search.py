@@ -27,17 +27,25 @@ def _client() -> TavilyClient:
     return TavilyClient(api_key=settings.tavily_api_key)
 
 
-def search_web(query: str, max_results: int = 5, include_images: bool = False, include_domains: list[str] | None = None) -> list[WebResult]:
+def search_web(
+    query: str,
+    max_results: int = 5,
+    include_images: bool = False,
+    include_domains: list[str] | None = None,
+    exclude_domains: list[str] | None = None,
+) -> list[WebResult]:
     """Live web search. Returns an empty list - not an error - when no key is configured or the call fails,
     so callers can treat "no web context" exactly like "no catalog matches" instead of a hard failure.
     include_images is opt-in (most callers don't need it) since Tavily returns every image found on each
     result's page - logos, tracking pixels, unrelated thumbnails - not just a clean hero shot. include_domains
-    is opt-in too, for callers that want to bias toward a known set of trustworthy sites."""
+    is opt-in too, for callers that want to bias toward a known set of trustworthy sites. exclude_domains is
+    for the opposite: sites that reliably return noise for a given use (e.g. an EMI/loan marketplace showing
+    up in product-price search, when it lists financing terms rather than an actual purchase price)."""
     settings = get_settings()
     if not settings.tavily_api_key:
         return []
     try:
-        response = _client().search(query, max_results=max_results, include_images=include_images, include_domains=include_domains)
+        response = _client().search(query, max_results=max_results, include_images=include_images, include_domains=include_domains, exclude_domains=exclude_domains)
     except Exception:
         logger.exception("web_search_failed")
         return []

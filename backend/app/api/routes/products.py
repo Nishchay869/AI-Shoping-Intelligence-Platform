@@ -32,17 +32,22 @@ def get_product(product_id: UUID, db: Session = Depends(get_db)) -> Product:
     return product
 
 
-@router.post("/image-search", response_model=ImageSearchResponse, dependencies=[Depends(rate_limit(20, 60))])
+@router.post("/image-search", response_model=ImageSearchResponse, dependencies=[Depends(rate_limit(15, 60))])
 async def search_products_by_image(image: UploadFile = File(...), top_k: int = Query(default=10, ge=1, le=50), db: Session = Depends(get_db)) -> ImageSearchResponse:
-    """Upload a photo to find visually similar catalog products - CLIP image embedding, pgvector cosine search."""
+    """Upload a photo to find visually similar catalog products (CLIP image embedding, pgvector cosine
+    search) plus live listings for the same product across Flipkart/Amazon/Myntra/Meesho/Shopsy/etc."""
     image_bytes = await image.read()
     if not image_bytes: raise HTTPException(status_code=400, detail="Uploaded file is empty")
     if len(image_bytes) > MAX_IMAGE_BYTES: raise HTTPException(status_code=413, detail="Image is too large (10MB max)")
     try:
-        matches = search_by_image(db, image_bytes, top_k=top_k)
+        catalog_matches, identified_as, web_listings = search_by_image(db, image_bytes, image.content_type or "image/jpeg", top_k=top_k)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
-    return ImageSearchResponse(results=[ImageSearchResult(product=product, similarity=similarity) for product, similarity in matches])
+    return ImageSearchResponse(
+        results=[ImageSearchResult(product=product, similarity=similarity) for product, similarity in catalog_matches],
+        identified_as=identified_as,
+        web_listings=[PriceListingResponse(retailer=listing.retailer, price=listing.price, currency=listing.currency, url=listing.url) for listing in web_listings],
+    )
 
 
 @router.post("/compare-prices", response_model=PriceComparisonResponse, dependencies=[Depends(rate_limit(15, 60))])

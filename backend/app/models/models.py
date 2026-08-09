@@ -109,8 +109,30 @@ class WishlistItem(Base):
     wishlist_id: Mapped[UUID] = mapped_column(ForeignKey("wishlists.id", ondelete="CASCADE"), nullable=False)
     product_id: Mapped[UUID] = mapped_column(ForeignKey("products.id", ondelete="CASCADE"), nullable=False)
     target_price_minor: Mapped[int | None] = mapped_column(Integer)
+    last_alerted_price_minor: Mapped[int | None] = mapped_column(Integer)
     wishlist: Mapped[Wishlist] = relationship(back_populates="items")
     product: Mapped[Product] = relationship(back_populates="wishlisted_by")
+
+
+class WhatsappMessageStatus(str, enum.Enum):
+    QUEUED = "queued"
+    SENT = "sent"
+    DELIVERED = "delivered"
+    READ = "read"
+    FAILED = "failed"
+
+
+class WhatsappMessage(TimestampMixin, Base):
+    """One outbound price-drop alert: a delivery/dedup log correlated with Meta's own message id so
+    webhook status callbacks (sent/delivered/read/failed) can be matched back to the row that sent it."""
+    __tablename__ = "whatsapp_messages"
+    id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    wishlist_item_id: Mapped[UUID] = mapped_column(ForeignKey("wishlist_items.id", ondelete="CASCADE"), nullable=False)
+    price_minor: Mapped[int] = mapped_column(Integer, nullable=False)
+    wa_message_id: Mapped[str | None] = mapped_column(Text, unique=True)
+    status: Mapped[WhatsappMessageStatus] = mapped_column(SAEnum(WhatsappMessageStatus, name="whatsapp_message_status", create_type=False, values_callable=lambda enum_cls: [member.value for member in enum_cls]), default=WhatsappMessageStatus.QUEUED, nullable=False)
+    error_detail: Mapped[str | None] = mapped_column(Text)
 
 
 class Review(TimestampMixin, Base):
@@ -209,9 +231,13 @@ class Receipt(TimestampMixin, Base):
     total_minor: Mapped[int | None] = mapped_column(Integer)
     currency: Mapped[str] = mapped_column(String(3), default="USD", nullable=False)
     warranty_text: Mapped[str | None] = mapped_column(Text)
+    warranty_expires_at: Mapped[date | None] = mapped_column(Date)
+    warranty_alert_sent: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     raw_ocr_text: Mapped[str] = mapped_column(Text, nullable=False)
     ocr_confidence: Mapped[float | None] = mapped_column(Numeric(4, 3))
+    image_hash: Mapped[str | None] = mapped_column(String(64))
     items: Mapped[list["ReceiptItem"]] = relationship(back_populates="receipt", cascade="all, delete-orphan")
+    __table_args__ = (UniqueConstraint("user_id", "image_hash", name="uq_receipts_user_image_hash"),)
 
 
 class ReceiptItem(Base):

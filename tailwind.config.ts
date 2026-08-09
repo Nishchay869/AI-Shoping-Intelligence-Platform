@@ -56,7 +56,11 @@ export default {
         "nav-in": { "0%": { opacity: "0", transform: "translateY(-18px)" }, "100%": { opacity: "1", transform: "translateY(0)" } },
         "mark-highlight": { "0%": { backgroundSize: "0% 0.85em" }, "100%": { backgroundSize: "100% 0.85em" } },
         shimmer: { "0%": { backgroundPosition: "-200% 0" }, "100%": { backgroundPosition: "200% 0" } },
-        marquee: { "0%": { transform: "translateX(0)" }, "100%": { transform: "translateX(-50%)" } }
+        marquee: { "0%": { transform: "translateX(0)" }, "100%": { transform: "translateX(-50%)" } },
+        // A document-scanner style sweep: a glowing line travels down the receipt preview while OCR/LLM
+        // extraction is in flight, then resets - `top` (not `transform`) so it tracks the container's own
+        // height regardless of image aspect ratio.
+        "scan-sweep": { "0%, 100%": { top: "0%" }, "50%": { top: "calc(100% - 2px)" } }
       },
       animation: {
         "fade-slide-up": "fade-slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both",
@@ -70,7 +74,8 @@ export default {
         "nav-in": "nav-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) both",
         "mark-highlight": "mark-highlight 1s cubic-bezier(0.65, 0, 0.35, 1) 0.7s both",
         shimmer: "shimmer 2.5s linear infinite",
-        marquee: "marquee 32s linear infinite"
+        marquee: "marquee 32s linear infinite",
+        "scan-sweep": "scan-sweep 1.8s cubic-bezier(0.65, 0, 0.35, 1) infinite"
       }
     }
   },

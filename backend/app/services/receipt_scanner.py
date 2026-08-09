@@ -6,12 +6,14 @@ same structured-extraction pattern as the review summarizer (app/services/review
 one JSON-schema-constrained Gemini call out, so the model cannot return anything outside the shape the
 caller expects.
 """
+import hashlib
 import json
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from uuid import UUID, uuid4
 from PIL import UnidentifiedImageError
 from pytesseract import TesseractNotFoundError
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.core.exceptions import NotFoundError, ServiceUnavailableError
@@ -43,8 +45,9 @@ _EXTRACTION_SCHEMA = {
         "total": {"type": ["number", "null"]},
         "currency": {"type": "string", "description": "Best-guess ISO 4217 currency code from symbols/context, e.g. USD, INR, EUR"},
         "warranty_text": {"type": ["string", "null"], "description": "Any warranty or return-policy text printed on the receipt, or null if none is present"},
+        "warranty_duration_days": {"type": ["integer", "null"], "description": "Warranty length in days, converted from whatever unit is stated (e.g. '1 year' -> 365, '90 days' -> 90), or null if no warranty duration is stated"},
     },
-    "required": ["store_name", "purchase_date", "items", "subtotal", "tax", "total", "currency", "warranty_text"],
+    "required": ["store_name", "purchase_date", "items", "subtotal", "tax", "total", "currency", "warranty_text", "warranty_duration_days"],
     "additionalProperties": False,
 }
 
@@ -74,8 +77,43 @@ def _extract_fields(raw_text: str) -> dict:
     return json.loads(response.content[0].text)
 
 
+def _scan_response(receipt: Receipt, saved: bool) -> ReceiptScanResponse:
+    return ReceiptScanResponse(
+        id=receipt.id,
+        store_name=receipt.store_name,
+        purchase_date=receipt.purchase_date,
+        subtotal_minor=receipt.subtotal_minor,
+        tax_minor=receipt.tax_minor,
+        total_minor=receipt.total_minor,
+        currency=receipt.currency,
+        warranty_text=receipt.warranty_text,
+        warranty_expires_at=receipt.warranty_expires_at,
+        ocr_confidence=receipt.ocr_confidence,
+        items=[ReceiptItemResponse.model_validate(item) for item in receipt.items],
+        created_at=receipt.created_at,
+        saved=saved,
+    )
+
+
+def _find_by_image_hash(db: Session, user_id: UUID, image_hash: str) -> Receipt | None:
+    return db.scalar(select(Receipt).where(Receipt.user_id == user_id, Receipt.image_hash == image_hash))
+
+
 def scan_receipt(db: Session, image_bytes: bytes, user: User | None) -> ReceiptScanResponse:
-    """Full pipeline entry point: OCR the image, extract structured fields via LLM, persist when signed in."""
+    """Full pipeline entry point: OCR the image, extract structured fields via LLM, persist when signed in.
+
+    Re-uploading a photo you've already scanned (byte-for-byte identical, e.g. an accidental double-submit or
+    re-uploading the same file) returns the existing saved receipt instead of creating a duplicate history row -
+    keyed on a hash of the image bytes, scoped per user so the same receipt photo scanned by two different
+    shoppers is not treated as a duplicate. Checked before OCR/the LLM run, so a repeat upload also skips that
+    cost entirely.
+    """
+    image_hash = hashlib.sha256(image_bytes).hexdigest()
+    if user:
+        existing = _find_by_image_hash(db, user.id, image_hash)
+        if existing:
+            return _scan_response(existing, saved=True)
+
     try:
         raw_text, ocr_confidence = extract_text(image_bytes)
     except UnidentifiedImageError as exc:
@@ -91,11 +129,16 @@ def scan_receipt(db: Session, image_bytes: bytes, user: User | None) -> ReceiptS
     except ValueError:
         purchase_date = None
     currency = "".join(ch for ch in (fields.get("currency") or "USD") if ch.isalpha())[:3].upper() or "USD"
+    # Date arithmetic is done here, not by the LLM (unreliable at computing dates) - the model only has to
+    # interpret the vague duration phrase into a number of days.
+    warranty_duration_days = fields.get("warranty_duration_days")
+    warranty_expires_at = purchase_date + timedelta(days=warranty_duration_days) if purchase_date and warranty_duration_days else None
 
     now = datetime.now(timezone.utc)
     receipt = Receipt(
         id=uuid4(),
         user_id=user.id if user else None,
+        image_hash=image_hash if user else None,
         store_name=fields["store_name"],
         purchase_date=purchase_date,
         subtotal_minor=_to_minor(fields["subtotal"]),
@@ -103,6 +146,7 @@ def scan_receipt(db: Session, image_bytes: bytes, user: User | None) -> ReceiptS
         total_minor=_to_minor(fields["total"]),
         currency=currency,
         warranty_text=fields["warranty_text"],
+        warranty_expires_at=warranty_expires_at,
         raw_ocr_text=raw_text,
         ocr_confidence=round(ocr_confidence, 3),
         created_at=now,
@@ -114,23 +158,19 @@ def scan_receipt(db: Session, image_bytes: bytes, user: User | None) -> ReceiptS
     )
     if user:
         db.add(receipt)
-        db.commit()
+        try:
+            db.commit()
+        except IntegrityError:
+            # Lost a race against an identical concurrent upload (e.g. a double-tapped submit button) that
+            # committed its own row for this image_hash between our lookup above and this commit.
+            db.rollback()
+            existing = _find_by_image_hash(db, user.id, image_hash)
+            if existing:
+                return _scan_response(existing, saved=True)
+            raise
         db.refresh(receipt)
 
-    return ReceiptScanResponse(
-        id=receipt.id,
-        store_name=receipt.store_name,
-        purchase_date=receipt.purchase_date,
-        subtotal_minor=receipt.subtotal_minor,
-        tax_minor=receipt.tax_minor,
-        total_minor=receipt.total_minor,
-        currency=receipt.currency,
-        warranty_text=receipt.warranty_text,
-        ocr_confidence=receipt.ocr_confidence,
-        items=[ReceiptItemResponse.model_validate(item) for item in receipt.items],
-        created_at=receipt.created_at,
-        saved=user is not None,
-    )
+    return _scan_response(receipt, saved=user is not None)
 
 
 def list_my_receipts(db: Session, user: User) -> list[Receipt]:
@@ -144,3 +184,12 @@ def get_my_receipt(db: Session, user: User, receipt_id: UUID) -> Receipt:
     if not receipt:
         raise NotFoundError("Receipt not found")
     return receipt
+
+
+def delete_my_receipt(db: Session, user: User, receipt_id: UUID) -> None:
+    """Delete one owned receipt from history, without exposing whether a receipt owned by someone else exists."""
+    receipt = db.scalar(select(Receipt).where(Receipt.id == receipt_id, Receipt.user_id == user.id))
+    if not receipt:
+        raise NotFoundError("Receipt not found")
+    db.delete(receipt)
+    db.commit()

@@ -167,3 +167,51 @@ def verify_product_photos(candidates: list[tuple[str, bytes, str]]) -> list[bool
         except Exception:
             logger.exception("image_verification_failed attempt=%d", attempt)
     return [False] * len(candidates)
+
+
+_PRODUCT_IDENTIFICATION_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "search_query": {
+            "type": ["string", "null"],
+            "description": "A short search-engine query a shopper would type to find this exact product for sale online - brand and exact model name if recognizable (e.g. 'Nike Air Max 270'), otherwise a specific generic description (e.g. 'black wireless over-ear headphones with rose gold accents'). Null if the image shows no identifiable product at all.",
+        }
+    },
+    "required": ["search_query"],
+    "additionalProperties": False,
+}
+
+
+def identify_product_photo(image_bytes: bytes, mime_type: str) -> str | None:
+    """Vision call: turns an uploaded photo into a short search query describing the product shown, so it
+    can be fed into the same live web product-price search every other "find this on Flipkart/Amazon/..."
+    feature in this app already uses (services/price_comparison.py) - photo in, real shoppable listings out,
+    not limited to whatever happens to already be embedded in this app's own small catalog."""
+    settings = get_settings()
+    try:
+        response = _client().models.generate_content(
+            model=settings.recommendation_model,
+            contents=[types.Content(role="user", parts=[
+                types.Part.from_text(text="Identify the product in this photo for a shopping search."),
+                types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
+            ])],
+            config=types.GenerateContentConfig(
+                system_instruction=(
+                    "Look at the uploaded photo and identify the specific product it shows, for the purpose "
+                    "of searching for it to buy online. Prefer an exact brand + model name if you can "
+                    "recognize one; otherwise describe it specifically enough to find the same or a very "
+                    "similar real product (type, color, distinguishing features). Return null only if the "
+                    "image genuinely shows no identifiable product (e.g. a blurry or unrelated photo)."
+                ),
+                max_output_tokens=256,
+                response_mime_type="application/json",
+                response_schema=_to_gemini_schema(_PRODUCT_IDENTIFICATION_SCHEMA),
+            ),
+        )
+        candidates = response.candidates or []
+        if not candidates or candidates[0].finish_reason != types.FinishReason.STOP:
+            return None
+        return json.loads(response.text).get("search_query")
+    except Exception:
+        logger.exception("product_photo_identification_failed")
+        return None

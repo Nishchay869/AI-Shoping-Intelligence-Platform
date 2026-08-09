@@ -13,6 +13,7 @@ from urllib.parse import urlparse
 import httpx
 from app.core.config import get_settings
 from app.core.currency import convert_to_inr
+from app.core.exceptions import ServiceUnavailableError
 from app.infrastructure.llm import create_message, verify_product_photos
 from app.infrastructure.web_search import search_web
 
@@ -22,8 +23,14 @@ logger = logging.getLogger(__name__)
 # packshots, unlike review/news/blog sites, whose "images" are often marketing banners or article art that
 # read as blurry/misleading when shown as a product photo. Falls back to an unrestricted search (see
 # _search_listings) so a niche product these retailers don't stock still returns something.
-INDIAN_RETAIL_DOMAINS = ["amazon.in", "flipkart.com", "croma.com", "reliancedigital.in", "tatacliq.com", "vijaysales.com"]
-RETAILER_NAMES = {"amazon.in": "Amazon", "flipkart.com": "Flipkart", "croma.com": "Croma", "reliancedigital.in": "Reliance Digital", "tatacliq.com": "Tata Cliq", "vijaysales.com": "Vijay Sales"}
+INDIAN_RETAIL_DOMAINS = ["amazon.in", "flipkart.com", "croma.com", "reliancedigital.in", "tatacliq.com", "vijaysales.com", "myntra.com", "shopsy.in", "meesho.com"]
+RETAILER_NAMES = {"amazon.in": "Amazon", "flipkart.com": "Flipkart", "croma.com": "Croma", "reliancedigital.in": "Reliance Digital", "tatacliq.com": "Tata Cliq", "vijaysales.com": "Vijay Sales", "myntra.com": "Myntra", "shopsy.in": "Shopsy", "meesho.com": "Meesho"}
+
+# Finance/EMI marketplaces, not real retailers - they list financing terms and installment amounts rather
+# than an actual purchase price, which is exactly the kind of figure this module works hard to filter out
+# elsewhere (_PRICE_SUFFIX_EXCLUDE). Excluded from every product-price search rather than relied on to be
+# filtered out downstream, since their whole page is built around EMI figures, not just one stray mention.
+EXCLUDED_DOMAINS = ["bajajfinserv.in", "bajajfinservmarkets.in", "bajajmarkets.in"]
 
 # A resolved page's own "images" list is site-wide (nav sprites, logos, tracking pixels), not just its
 # product gallery - confirmed live: an Amazon product page's first image was its global nav sprite, a
@@ -36,6 +43,20 @@ BAD_IMAGE_PATTERNS = ("sprite", "logo", "icon", "pixel", "tracking", "uedata", "
 # Matches a real rupee figure in crawled page text (e.g. "₹32,990", "Rs. 27,999"). >=1000 guards against
 # incidentally matching a small fee/EMI line rather than the actual product price.
 PRICE_PATTERN = re.compile(r"(?:₹|Rs\.?\s?|INR\s?)\s?([\d]{1,3}(?:,\d{2,3})+|\d{4,7})")
+
+# A figure immediately followed by "off" is a discount *amount* ("₹1,975 off"), one followed by "x <number>"
+# is an EMI monthly installment ("₹1,757 x 36m"), and one immediately preceded by "up to" is a conditional
+# exchange/trade-in credit ("Exchange offer\nUp to ₹16,100") - all three confirmed live on Flipkart, sitting
+# right next to the real price text. None of them is what the shopper actually pays for the product.
+_PRICE_SUFFIX_EXCLUDE = re.compile(r"^\s*(?:off\b|x\s*\d)", re.IGNORECASE)
+_PRICE_PREFIX_EXCLUDE = re.compile(r"up\s*to\s*$", re.IGNORECASE)
+
+# A figure near one of these phrases is the retailer's own explicit call-out of the real, current, payable
+# price (confirmed live: Flipkart's "Buy at ₹X" / "Lowest price for you", bigbasket's "Price: ₹X") - a much
+# stronger signal than "smallest number on the page", which a stray exchange-offer or coupon figure can beat
+# even after the exclusions above. Deliberately excludes "MRP" - that label means the opposite of this.
+_PRICE_LABEL_HINT = re.compile(r"buy at|lowest price|our price|deal price|special price|sale price|\bprice\s*[:\-]", re.IGNORECASE)
+_LABEL_WINDOW = 30
 
 DISCOVERY_MAX_CANDIDATES = 15
 MAX_LISTINGS = 10
@@ -118,14 +139,14 @@ def _format_result(r) -> str:
 
 
 def _search_listings(query: str, max_results: int):
-    results = search_web(query, max_results=max_results, include_images=True, include_domains=INDIAN_RETAIL_DOMAINS)
+    results = search_web(query, max_results=max_results, include_images=True, include_domains=INDIAN_RETAIL_DOMAINS, exclude_domains=EXCLUDED_DOMAINS)
     if results:
         return results
     # Nothing on the major retailers for this query - broaden rather than return empty.
-    return search_web(query, max_results=max_results, include_images=True)
+    return search_web(query, max_results=max_results, include_images=True, exclude_domains=EXCLUDED_DOMAINS)
 
 
-def _retailer_label(url: str) -> str:
+def retailer_label(url: str) -> str:
     host = urlparse(url).netloc.lower().removeprefix("www.")
     for domain, name in RETAILER_NAMES.items():
         if domain in host:
@@ -160,14 +181,90 @@ def _is_real_product_url(url: str) -> bool:
 
 
 def _extract_price_inr(text: str) -> float | None:
+    """A retailer listing's raw text lists the struck-through original/MRP price before the discounted one
+    it's actually selling for (confirmed live on Flipkart, e.g. "₹34,000" / "₹21,999" / "₹19,924 with Bank
+    offer" in that order), so the first match is never trustworthy. Explicitly-labelled prices
+    (_PRICE_LABEL_HINT) are preferred when present - the strongest available signal for what the shopper
+    actually pays. Failing that, falls back to the lowest amount found among candidates that survive the
+    exclusions - the discounted price is never higher than its own MRP - though this fallback is weaker: it
+    can still be fooled by a page fragment with no real price in it at all, just a discount/offer figure that
+    happens to look like one."""
+    labelled = []
+    candidates = []
     for match in PRICE_PATTERN.finditer(text):
+        preceding = text[max(0, match.start() - _LABEL_WINDOW):match.start()]
+        trailing = text[match.end():match.end() + 20]
+        if _PRICE_SUFFIX_EXCLUDE.match(trailing) or _PRICE_PREFIX_EXCLUDE.search(preceding):
+            continue
         try:
             value = float(match.group(1).replace(",", ""))
         except ValueError:
             continue
-        if value >= 1000:
-            return value
-    return None
+        if value < 1000:
+            continue
+        candidates.append(value)
+        window = preceding + trailing[:_LABEL_WINDOW]
+        if _PRICE_LABEL_HINT.search(window):
+            labelled.append(value)
+    if labelled:
+        return min(labelled)
+    return min(candidates) if candidates else None
+
+
+_PRICE_EXTRACTION_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "price": {
+            "type": ["number", "null"],
+            "description": "The single current price a shopper would actually pay right now for this exact product, in major currency units (e.g. 21999, not 2199900) - or null if the text states no such price.",
+        }
+    },
+    "required": ["price"],
+    "additionalProperties": False,
+}
+
+
+def _extract_price_via_llm(product_title: str, text: str) -> float | None:
+    """Reads one page's raw crawled text and returns the real, current, payable price - not the struck-
+    through original/MRP price, an EMI monthly installment, a discount/savings amount, or an exchange/trade-
+    in credit. _extract_price_inr's regex approach was tried first and repeatedly got fooled by exactly those
+    look-alikes in real Flipkart/bigbasket text (confirmed live) - a small LLM call actually reads the
+    surrounding words the way a shopper would, rather than pattern-matching bare digits.
+
+    Best-effort: this runs once per candidate listing (up to DISCOVERY_MAX_CANDIDATES of them, in parallel),
+    stacked on top of every other LLM call already in this pipeline - a transient failure or rate limit on
+    just this one call must degrade to "no price from this source" (the caller falls through to the next
+    candidate, or the discovery stage's own guess), never take down the whole recommendation request."""
+    settings = get_settings()
+    try:
+        response = create_message(
+            model=settings.recommendation_model,
+            max_tokens=64,
+            system=(
+                "You read raw crawled text from one shopping/retailer web page and extract the single current "
+                "price a shopper would actually pay right now for the named product. Never return the original/"
+                "struck-through/MRP price, an EMI monthly installment amount, a discount or savings amount ('X "
+                "off'), or an exchange/trade-in credit ('up to X') - only the real, final, current price. If the "
+                "text is about a different product, or states no price at all, return null. Never invent a price."
+            ),
+            messages=[{"role": "user", "content": f"Product: {product_title}\n\nPage text:\n{text[:3000]}"}],
+            output_config={"format": {"type": "json_schema", "schema": _PRICE_EXTRACTION_SCHEMA}},
+        )
+    except ServiceUnavailableError:
+        logger.warning("price_extraction_llm_call_failed product_title=%s", product_title)
+        return None
+    if response.stop_reason == "refusal":
+        return None
+    return json.loads(response.content[0].text).get("price")
+
+
+def _resolve_price(product_title: str, text: str) -> float | None:
+    """A cheap regex pre-check before spending an LLM call: skip straight to None for text with no
+    rupee-shaped figure in it at all (a spec-only brand page, a video description) rather than asking the
+    model to read text that plainly has nothing to extract."""
+    if not PRICE_PATTERN.search(text):
+        return None
+    return _extract_price_via_llm(product_title, text)
 
 
 def _resolve_listing(listing: WebProductListing) -> WebProductListing | None:
@@ -179,7 +276,7 @@ def _resolve_listing(listing: WebProductListing) -> WebProductListing | None:
     specific pages almost always state a price, even when the roundup that surfaced this candidate didn't).
     Returns None - dropping the candidate - only if no price can be found anywhere, since a shopper can't act
     on a product with no price."""
-    results = search_web(f"{listing.title} buy price India"[:400], max_results=6, include_images=True)
+    results = search_web(f"{listing.title} buy price India"[:400], max_results=6, include_images=True, exclude_domains=EXCLUDED_DOMAINS)
     valid = [r for r in results if _is_real_product_url(r.url)]
     # Prefer a result actually hosted on an Indian storefront over a generic/global one (e.g. amazon.com
     # instead of amazon.in) - a stable sort keeps Tavily's own relevance order within each group.
@@ -189,7 +286,7 @@ def _resolve_listing(listing: WebProductListing) -> WebProductListing | None:
         price = listing.price
         if price is None:
             for r in results:
-                found = _extract_price_inr(r.snippet)
+                found = _resolve_price(listing.title, r.snippet)
                 if found is not None:
                     price = found
                     break
@@ -205,7 +302,7 @@ def _resolve_listing(listing: WebProductListing) -> WebProductListing | None:
     top = None
     price = None
     for r in valid:
-        found = _extract_price_inr(r.snippet)
+        found = _resolve_price(listing.title, r.snippet)
         if found is not None:
             top = r
             price = found
@@ -230,7 +327,7 @@ def _resolve_listing(listing: WebProductListing) -> WebProductListing | None:
             break
     image_candidates = image_candidates[:3]
     image_url = image_candidates[0] if image_candidates else listing.image_url
-    return replace(listing, retailer=_retailer_label(top.url), url=top.url, image_url=image_url, image_candidates=image_candidates, price=price, currency="INR")
+    return replace(listing, retailer=retailer_label(top.url), url=top.url, image_url=image_url, image_candidates=image_candidates, price=price, currency="INR")
 
 
 def _download_image(url: str) -> tuple[bytes, str] | None:
@@ -344,8 +441,11 @@ def search_web_products(purpose: str, features: list[str], budget: float | None,
             "it fits the budget and search results mention it. Within that category, your goal is breadth: "
             "list every distinct product name that actually appears in the source text and plausibly belongs "
             "in this shopper's category and rough budget range - aim for as many as the results genuinely "
-            "support (up to 15), not just the 2-3 safest picks. Being included does not require a perfect "
-            "match to every stated feature - a decent, "
+            "support (up to 15), not just the 2-3 safest picks. When a source states more than one price for "
+            "the same listing (a struck-through original/MRP price alongside a discounted/sale/bank-offer "
+            "price - retailer pages list the original first), always use the lower, current discounted price "
+            "the shopper would actually pay, never the crossed-out original. Being included does not require "
+            "a perfect match to every stated feature - a decent, "
             "honestly-explained match ranked further down is far more useful to the shopper than an "
             "artificially short list. The only hard rule is that the product itself must be actually named in "
             "the source text - never invent one that isn't. A price is nice when the source states one, but "

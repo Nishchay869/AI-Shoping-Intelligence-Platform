@@ -15,6 +15,7 @@ os.environ.setdefault("REDIS_URL", "redis://localhost:6379/1")  # index 1: isola
 # never accidentally make a real, billed network call just because the developer happens to have a working
 # key sitting in .env.
 os.environ["GEMINI_API_KEY"] = ""
+os.environ["WHATSAPP_ACCESS_TOKEN"] = ""  # same reasoning: never let a real backend/.env token cause a real, billed WhatsApp send in tests
 
 import random
 import time
@@ -31,7 +32,7 @@ from sqlalchemy.orm import sessionmaker
 from app.api.deps import get_current_user, get_current_user_optional, get_db
 from app.core.config import get_settings
 from app.main import app
-from app.models import Product, User
+from app.models import Product, ProductOffer, Retailer, User
 
 
 @pytest.fixture(scope="session")
@@ -214,5 +215,32 @@ def make_product(db_session):
         db_session.commit()
         db_session.refresh(product)
         return product
+
+    return _make
+
+
+@pytest.fixture()
+def make_offer(db_session, make_product):
+    """Factory: create a persisted retailer + product offer, for price-observation/alert tests."""
+
+    def _make(*, product: Product | None = None, price_minor: int = 9999, currency: str = "USD", available: bool = True, **overrides) -> ProductOffer:
+        product = product or make_product()
+        retailer = Retailer(name="Test Retailer", code=f"retailer-{uuid4().hex[:8]}", website_url="https://example.com")
+        db_session.add(retailer)
+        db_session.commit()
+        db_session.refresh(retailer)
+        offer = ProductOffer(
+            product_id=product.id,
+            retailer_id=retailer.id,
+            external_listing_id=overrides.pop("external_listing_id", uuid4().hex),
+            listing_url=overrides.pop("listing_url", "https://example.com/listing"),
+            currency=currency,
+            current_price_minor=price_minor,
+            is_available=available,
+        )
+        db_session.add(offer)
+        db_session.commit()
+        db_session.refresh(offer)
+        return offer
 
     return _make
