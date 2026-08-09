@@ -111,32 +111,41 @@ VOYAGE_API_KEY=pa-...
 
 ```bash
 alembic upgrade head
-uvicorn app.main:app --reload --port 8000
 ```
-
-Verify: `curl http://localhost:8000/health` → `{"status":"ok",...}`. Interactive API docs at
-`http://localhost:8000/docs`.
 
 ### 3. Frontend
 
 ```bash
 cd ..                 # project root
 npm install
+```
+
+`BACKEND_API_URL`/`NEXT_PUBLIC_APP_URL` already default correctly for `localhost`, but
+`NEXT_PUBLIC_SUPABASE_URL`/`NEXT_PUBLIC_SUPABASE_ANON_KEY` are required - copy `.env.example` to `.env` at the
+project root and fill in your Supabase project's URL and publishable key (Dashboard > Project Settings > API).
+
+### 4. Run it
+
+```bash
 npm run dev
 ```
 
-Open **http://localhost:3000**. `BACKEND_API_URL`/`NEXT_PUBLIC_APP_URL` already default correctly for
-`localhost`, but `NEXT_PUBLIC_SUPABASE_URL`/`NEXT_PUBLIC_SUPABASE_ANON_KEY` are required - copy `.env.example`
-to `.env` at the project root and fill in your Supabase project's URL and publishable key (Dashboard >
-Project Settings > API).
+Runs the FastAPI backend (`backend/.venv/bin/uvicorn app.main:app --reload`, port 8000) and the Next.js
+frontend (`next dev`, port 3000) together in one terminal, output prefixed `[backend]`/`[frontend]`. Requires
+step 1's Postgres/Redis to already be running and step 2's `.venv` to already exist.
 
-### 4. Create an account
+Open **http://localhost:3000**. Verify the API separately with `curl http://localhost:8000/health` →
+`{"status":"ok",...}`; interactive API docs at `http://localhost:8000/docs`.
+
+To run just one side, use `npm run dev:backend` or `npm run dev:frontend`.
+
+### 5. Create an account
 
 Sign up at **/auth/sign-up** - this calls Supabase Auth directly and stores a real session, which is what
 unlocks wishlist, receipt history, and personalized recommendations. If your Supabase project has email
 confirmation enabled (the default), you'll need to click the confirmation link before your first sign-in.
 
-### 5. Populate the catalog (manual - there is no seed data or scraper)
+### 6. Populate the catalog (manual - there is no seed data or scraper)
 
 By design, this app never scrapes retailers (see [Security & data policy](#security--data-policy)). Insert
 a few products yourself to have something to search/recommend/wishlist:
