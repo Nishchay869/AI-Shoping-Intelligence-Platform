@@ -2,7 +2,7 @@
 from datetime import datetime
 from typing import Literal
 from uuid import UUID
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 
 class CreateReviewRequest(BaseModel):
@@ -20,6 +20,20 @@ class ReviewResponse(BaseModel):
     body: str | None
     is_verified_purchase: bool
     created_at: datetime
+    trust_score: float | None = Field(default=None, description="Fake-review probability (0=genuine-looking, 1=fake-looking) from the RandomForest+XGBoost ensemble in ml/fake_review_detection. Null until scored.")
+
+    @computed_field
+    @property
+    def trust_tier(self) -> Literal["trusted", "uncertain", "likely_fake"] | None:
+        """Derived at read time from trust_score, not stored - a threshold on one number doesn't need its
+        own column, and this way it can never drift out of sync with the score it comes from."""
+        if self.trust_score is None:
+            return None
+        if self.trust_score >= 0.66:
+            return "likely_fake"
+        if self.trust_score >= 0.33:
+            return "uncertain"
+        return "trusted"
 
 
 class RatingBreakdown(BaseModel):

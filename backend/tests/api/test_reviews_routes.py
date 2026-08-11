@@ -80,3 +80,29 @@ def test_review_summary_without_an_llm_key_fails_as_service_unavailable_not_a_cr
 
     response = as_user(user).get(f"/api/v1/products/{product.id}/reviews/summary")
     assert response.status_code == 503
+
+
+def test_create_review_response_includes_trust_fields(as_user, make_user, make_product) -> None:
+    from unittest.mock import patch
+    user = make_user()
+    product = make_product()
+    with patch("app.services.reviews.score_texts", return_value=[0.9]):
+        response = as_user(user).post(f"/api/v1/products/{product.id}/reviews", json={"rating": 5, "body": "Amazing!!!"})
+    body = response.json()
+    assert body["trust_score"] == 0.9
+    assert body["trust_tier"] == "likely_fake"
+
+
+def test_list_reviews_returns_visible_reviews_for_the_product(as_user, make_user, make_product) -> None:
+    from unittest.mock import patch
+    product = make_product()
+    with patch("app.services.reviews.score_texts", return_value=[0.1]):
+        as_user(make_user()).post(f"/api/v1/products/{product.id}/reviews", json={"rating": 5, "body": "Solid."})
+    response = as_user(make_user()).get(f"/api/v1/products/{product.id}/reviews")
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+
+
+def test_list_reviews_for_a_product_with_no_reviews_returns_empty_list(client, make_product) -> None:
+    product = make_product()
+    assert client.get(f"/api/v1/products/{product.id}/reviews").json() == []

@@ -148,6 +148,7 @@ class Review(TimestampMixin, Base):
     is_verified_purchase: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_visible: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     embedding: Mapped[list[float] | None] = mapped_column(Vector(768))
+    trust_score: Mapped[float | None] = mapped_column(Numeric(5, 4))
     product: Mapped[Product] = relationship()
 
 

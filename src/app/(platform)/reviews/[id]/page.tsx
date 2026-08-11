@@ -1,6 +1,10 @@
 "use client";
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
+import { ReviewCard } from "@/components/review-card";
+import type { Review } from "@/shared/domain/review";
+
+const REVIEWS_PAGE_SIZE = 10;
 
 type ReviewSummary = {
   product_id: string;
@@ -29,6 +33,8 @@ export default function ReviewSummaryPage({ params }: { params: Promise<{ id: st
   const [summary, setSummary] = useState<ReviewSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewsOffset, setReviewsOffset] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -43,6 +49,13 @@ export default function ReviewSummaryPage({ params }: { params: Promise<{ id: st
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [id]);
+
+  const loadReviews = (offset: number) => {
+    fetch(`/api/v1/products/${id}/reviews?limit=${REVIEWS_PAGE_SIZE}&offset=${offset}`)
+      .then((response) => response.json())
+      .then((data: Review[]) => setReviews((prev) => (offset === 0 ? data : [...prev, ...data])));
+  };
+  useEffect(() => { setReviewsOffset(0); loadReviews(0); }, [id]);
 
   return (
     <div>
@@ -101,6 +114,21 @@ export default function ReviewSummaryPage({ params }: { params: Promise<{ id: st
             </div>
           )}
         </>
+      )}
+
+      {reviews.length > 0 && (
+        <div className="mt-4 space-y-3">
+          <h2 className="font-bold text-ink">Individual reviews</h2>
+          {reviews.map((review) => <ReviewCard key={review.id} review={review} />)}
+          {reviews.length % REVIEWS_PAGE_SIZE === 0 && (
+            <button
+              onClick={() => { const next = reviewsOffset + REVIEWS_PAGE_SIZE; setReviewsOffset(next); loadReviews(next); }}
+              className="text-sm font-semibold text-brand-600 hover:text-brand-700"
+            >
+              Load more reviews →
+            </button>
+          )}
+        </div>
       )}
     </div>
   );

@@ -10,11 +10,13 @@ coverage
 .venv
 backend/.venv
 backend/.env
-backend/ml/fake_review_detection/artifacts
+backend/ml/fake_review_detection/artifacts/*
+!backend/ml/fake_review_detection/artifacts/fake_review_model.joblib
 backend/ml/price_prediction/artifacts
 backend/vectordb_tutorial/storage
 backend/app/services/assistant/storage
 *.joblib
+!backend/ml/fake_review_detection/artifacts/fake_review_model.joblib
 __pycache__/
 *.pyc
 .DS_Store
