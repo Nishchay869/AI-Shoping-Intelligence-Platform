@@ -119,6 +119,9 @@ export default function ForYouPage() {
                 <button onClick={() => logClick(product)} className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-200">View</button>
                 <button onClick={() => toggleWishlist(product)} className={`rounded-lg px-2 py-1 text-xs font-semibold ${wishlisted.has(product.id) ? "bg-rose-100 text-rose-600" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>{wishlisted.has(product.id) ? "Wishlisted" : "Wishlist"}</button>
                 <button onClick={() => logPurchase(product)} className="rounded-lg bg-brand-50 px-2 py-1 text-xs font-semibold text-brand-700 hover:bg-brand-100">Buy</button>
+                <Link href={`/reviews/${product.id}`} className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-200">
+                  Reviews{product.review_count > 0 ? ` (${product.review_count})` : ""}
+                </Link>
               </div>
             </article>
           ))}
