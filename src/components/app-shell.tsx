@@ -5,10 +5,22 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { AssistantWidget } from "./assistant-widget";
 import { Icon, type IconName } from "./icons";
-import { clearToken } from "@/shared/auth/token";
+import { authHeaders, clearToken } from "@/shared/auth/token";
 import { displayNameFor, initialsFor } from "@/shared/auth/use-current-user";
 import { supabase } from "@/shared/supabase/client";
 import type { User } from "@supabase/supabase-js";
+
+type Notification = { id: string; message: string; product_title: string; is_read: boolean; created_at: string };
+
+function timeAgo(iso: string): string {
+  const seconds = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
+  if (seconds < 60) return "just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
 
 const navigation: { href: string; label: string; icon: IconName }[] = [
   { href: "/dashboard", label: "Overview", icon: "home" },
@@ -75,6 +87,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [closing, setClosing] = useState(false);
   const [authorized, setAuthorized] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[] | null>(null);
+  const [confirmingLogout, setConfirmingLogout] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -92,7 +108,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const name = displayNameFor(user);
 
-  async function signOut() { await clearToken(); router.push("/auth/sign-in"); }
+  async function toggleNotifications() {
+    const opening = !notifOpen;
+    setNotifOpen(opening);
+    if (opening && notifications === null) {
+      try {
+        const response = await fetch("/api/v1/notifications", { headers: await authHeaders() });
+        setNotifications(response.ok ? await response.json() : []);
+      } catch {
+        setNotifications([]);
+      }
+    }
+  }
+
+  async function confirmSignOut() {
+    setSigningOut(true);
+    await clearToken();
+    router.push("/auth/sign-in");
+  }
 
   function closeDrawer() {
     setClosing(true);
@@ -153,13 +186,36 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <button aria-label="Open navigation" onClick={() => setOpen(true)} className="rounded-lg p-1.5 text-slate-600 transition-colors hover:bg-slate-900/5 lg:hidden"><Icon name="menu" className="h-6 w-6" /></button>
           </div>
           <div className="flex items-center gap-4 sm:gap-6">
-            <button aria-label="Notifications" className="relative text-slate-500 transition-colors hover:text-slate-700">
-              <Icon name="bell" className="h-5 w-5" />
-              <span className="absolute -right-0.5 -top-0.5 flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-rose-500" />
-              </span>
-            </button>
+            <div className="relative">
+              <button aria-label="Notifications" onClick={toggleNotifications} className="relative text-slate-500 transition-colors hover:text-slate-700">
+                <Icon name="bell" className="h-5 w-5" />
+                {notifications?.some((n) => !n.is_read) !== false && (
+                  <span className="absolute -right-0.5 -top-0.5 flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-rose-500" />
+                  </span>
+                )}
+              </button>
+
+              {notifOpen && (
+                <>
+                  <button aria-label="Close notifications" className="fixed inset-0 z-40" onClick={() => setNotifOpen(false)} />
+                  <div className="surface-elevated animate-scale-in absolute right-0 top-full z-50 mt-3 w-80 origin-top-right rounded-2xl p-2">
+                    <p className="label-caps px-3 py-2 text-slate-400">Notifications</p>
+                    {notifications === null && <p className="px-3 py-4 text-sm text-slate-400">Loading…</p>}
+                    {notifications !== null && notifications.length === 0 && (
+                      <p className="px-3 py-4 text-sm text-slate-400">No price-drop alerts yet - they&apos;ll show up here once a wishlisted item drops in price.</p>
+                    )}
+                    {notifications?.map((n) => (
+                      <div key={n.id} className={`rounded-xl px-3 py-2.5 text-sm ${n.is_read ? "text-slate-500" : "text-ink"}`}>
+                        <p className="leading-5">{n.message}</p>
+                        <p className="mt-0.5 text-xs text-slate-400">{timeAgo(n.created_at)}</p>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
             <Link href="/profile" className="hidden items-center gap-3 pl-4 sm:flex md:pl-6">
               <span className="text-right leading-tight">
                 <span className="label-caps block text-slate-700">{name}</span>
@@ -167,12 +223,29 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </span>
               <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-brand-100 to-brand-200 text-sm font-bold text-brand-700 shadow-neu-sm">{initialsFor(name)}</span>
             </Link>
-            <button aria-label="Sign out" onClick={signOut} className="text-slate-500 transition-colors hover:text-rose-600"><Icon name="logout" className="h-5 w-5" /></button>
+            <button aria-label="Sign out" onClick={() => setConfirmingLogout(true)} className="text-slate-500 transition-colors hover:text-rose-600"><Icon name="logout" className="h-5 w-5" /></button>
           </div>
         </header>
         <main className="mx-auto max-w-7xl p-4 sm:p-8">{children}</main>
       </div>
       <AssistantWidget />
+
+      {confirmingLogout && (
+        <>
+          <button aria-label="Cancel sign out" className="animate-fade-in fixed inset-0 z-[60] bg-slate-950/40 backdrop-blur-sm" onClick={() => setConfirmingLogout(false)} />
+          <div className="animate-scale-in card fixed left-1/2 top-1/2 z-[70] w-full max-w-sm -translate-x-1/2 -translate-y-1/2 p-6 text-center">
+            <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-rose-50 text-rose-600"><Icon name="logout" className="h-5 w-5" /></span>
+            <h2 className="mt-4 text-lg font-bold text-ink">Sign out?</h2>
+            <p className="mt-1 text-sm text-slate-500">You&apos;ll need to sign in again to get back to your wishlist, chat history, and preferences.</p>
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <button onClick={() => setConfirmingLogout(false)} className="btn-secondary">Cancel</button>
+              <button onClick={confirmSignOut} disabled={signingOut} className="rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-rose-700 disabled:opacity-60">
+                {signingOut ? "Signing out…" : "Sign out"}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

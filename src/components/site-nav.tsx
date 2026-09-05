@@ -1,5 +1,7 @@
+"use client";
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 import { Icon, type IconName } from "./icons";
 
 // The four feature links point at public /features pages (description, how-it-works, usage guide,
@@ -17,12 +19,19 @@ const NAV_ITEMS: { href: string; label: string; icon: IconName }[] = [
 
 /** Public marketing navbar, shared by the landing page and every standalone marketing/legal page.
  * A floating pill rather than an edge-to-edge bar, with an entrance animation that plays once per
- * page load and an animated underline on each link's hover state. */
+ * page load and an animated underline on each link's hover state.
+ *
+ * Below the `lg` breakpoint the nav links have nowhere to go (there's no room in the pill for them),
+ * so a visitor on mobile used to see only the logo and a bare "Sign in" button - every other nav
+ * destination was simply invisible, not just collapsed. A hamburger toggle now holds the same links
+ * (plus sign in) in a dropdown instead of dropping them. */
 export function SiteNav() {
+  const [open, setOpen] = useState(false);
+
   return (
     <div className="animate-nav-in fixed inset-x-0 top-4 z-50 px-4 sm:top-5 sm:px-6">
       <nav className="surface-raised mx-auto flex h-16 max-w-7xl items-center justify-between rounded-full pl-4 pr-3 sm:pl-6 sm:pr-4">
-        <Link href="/" className="flex shrink-0 items-center gap-2 text-lg font-bold text-brand-700">
+        <Link href="/" className="flex shrink-0 items-center gap-2 text-lg font-bold text-brand-700" onClick={() => setOpen(false)}>
           <Image src="/logo-icon.png" alt="" width={36} height={36} className="h-9 w-9" priority />
           <span className="hidden sm:inline">Shopping AI</span>
         </Link>
@@ -41,8 +50,35 @@ export function SiteNav() {
           ))}
         </div>
 
-        <Link href="/auth/sign-in" className="btn-primary shrink-0 rounded-full px-6">Sign in</Link>
+        <Link href="/auth/sign-in" className="btn-primary hidden shrink-0 rounded-full px-6 lg:inline-flex">Sign in</Link>
+
+        <button
+          type="button"
+          aria-label={open ? "Close menu" : "Open menu"}
+          aria-expanded={open}
+          onClick={() => setOpen((value) => !value)}
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-slate-600 transition-colors hover:bg-slate-900/5 lg:hidden"
+        >
+          <Icon name={open ? "x" : "menu"} className="h-5 w-5" />
+        </button>
       </nav>
+
+      {open && (
+        <div className="surface-elevated animate-scale-in mx-auto mt-2 max-w-7xl origin-top rounded-3xl p-3 lg:hidden">
+          {NAV_ITEMS.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-900/5 hover:text-brand-700"
+            >
+              <Icon name={item.icon} className="h-4 w-4 text-slate-400" />
+              {item.label}
+            </Link>
+          ))}
+          <Link href="/auth/sign-in" onClick={() => setOpen(false)} className="btn-primary mt-2 w-full justify-center rounded-2xl">Sign in</Link>
+        </div>
+      )}
     </div>
   );
 }

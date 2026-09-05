@@ -85,7 +85,7 @@ export function SiteFooter() {
 
         <div className="mt-14 flex flex-col items-center justify-between gap-4 border-t border-slate-200/70 pt-8 sm:flex-row">
           <p className="text-sm text-slate-500">© {new Date().getFullYear()} AI Shopping Intelligence Platform. All rights reserved.</p>
-          <p className="text-xs text-slate-400">Made for shoppers who like a good deal.</p>
+          <p className="text-xs text-slate-400">Made and developed by Nishchay.</p>
         </div>
       </div>
     </footer>

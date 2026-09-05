@@ -95,6 +95,21 @@ export default function WishlistPage() {
 
       {error && <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{error}</div>}
 
+      {wishlists === null && !error && (
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className="card overflow-hidden">
+              <div className="h-44 animate-pulse bg-slate-100" />
+              <div className="space-y-2 p-4">
+                <div className="h-3 w-1/2 animate-pulse rounded bg-slate-100" />
+                <div className="h-4 w-full animate-pulse rounded bg-slate-100" />
+                <div className="h-5 w-1/3 animate-pulse rounded bg-slate-100" />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {wishlists !== null && allItems.length === 0 && !error && (
         <div className="card mt-8 p-8 text-center">
           <Icon name="heart" className="mx-auto h-8 w-8 text-slate-300" />
