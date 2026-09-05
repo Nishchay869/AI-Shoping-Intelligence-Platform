@@ -43,7 +43,7 @@ export function Toggle({ checked, onChange, label, description }: { checked: boo
         onClick={() => onChange(!checked)}
         className={`relative h-7 w-12 shrink-0 rounded-full transition-colors duration-200 ${checked ? "bg-gradient-to-br from-brand-500 to-brand-600 shadow-neu-brand" : "bg-surface shadow-neu-inset-sm"}`}
       >
-        <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow-neu-sm transition-transform duration-200 ${checked ? "translate-x-6" : "translate-x-1"}`} />
+        <span className={`absolute left-1 top-1 h-5 w-5 rounded-full bg-white shadow-neu-sm transition-transform duration-200 ${checked ? "translate-x-5" : "translate-x-0"}`} />
       </button>
     </div>
   );
