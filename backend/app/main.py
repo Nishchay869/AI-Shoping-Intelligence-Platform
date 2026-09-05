@@ -1,5 +1,6 @@
 """FastAPI application composition root for the backend modular monolith."""
 import logging
+import threading
 import time
 from fastapi import FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
@@ -56,6 +57,31 @@ async def unhandled_exception_handler(request: Request, error: Exception) -> JSO
     """
     logger.exception("unhandled_exception method=%s path=%s", request.method, request.url.path)
     return JSONResponse(status_code=500, content={"error": "INTERNAL_ERROR", "detail": "An unexpected error occurred"})
+
+
+def _warm_up_assistant_graph() -> None:
+    try:
+        from app.services.assistant.graph import get_graph
+        get_graph()
+    except Exception:
+        logger.exception("assistant_graph_warmup_failed")
+
+
+@app.on_event("startup")
+def warm_up_assistant_graph() -> None:
+    """Build the LangGraph agent - and pay its first-use-only langchain/langgraph import cost (deferred
+    from module load to keep this process's baseline memory under Render's free-tier ceiling, see
+    graph.py) - in a background thread right after startup, rather than leaving it to whichever real
+    shopper's message happens to be first. That cold path measured over a minute in production; starting
+    it now gives it a head start before real traffic arrives instead of making a live user wait through it.
+    A plain thread, not a task on the request-serving event loop, since building the graph is itself
+    synchronous, import/CPU-bound work that would otherwise block every other request meanwhile.
+
+    production only: pytest instantiates a fresh TestClient(app) - which fires this same startup event -
+    per test module, and dozens of them racing to cold-import the same heavy libraries concurrently turned
+    a ~30s test suite into a 5+ minute one the one time this ran unconditionally locally."""
+    if settings.app_env == "production":
+        threading.Thread(target=_warm_up_assistant_graph, daemon=True).start()
 
 
 @app.get("/health", tags=["operational"])

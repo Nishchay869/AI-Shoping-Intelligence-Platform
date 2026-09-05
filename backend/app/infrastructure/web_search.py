@@ -45,7 +45,11 @@ def search_web(
     if not settings.tavily_api_key:
         return []
     try:
-        response = _client().search(query, max_results=max_results, include_images=include_images, include_domains=include_domains, exclude_domains=exclude_domains)
+        # Tavily's own default timeout is 60s - fine for a batch job, unacceptable for a synchronous chat
+        # request a shopper is actively waiting on. A degraded/slow Tavily response should give up and fall
+        # back to catalog-only context quickly, not make every chat message pay up to a full minute for it.
+        # search_depth="fast" trims Tavily's own processing time for the common (non-timeout) case too.
+        response = _client().search(query, max_results=max_results, include_images=include_images, include_domains=include_domains, exclude_domains=exclude_domains, timeout=8, search_depth="fast")
     except Exception:
         logger.exception("web_search_failed")
         return []

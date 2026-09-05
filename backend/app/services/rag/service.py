@@ -1,6 +1,7 @@
 """RAG orchestration: retrieve -> generate -> persist. This is the single entry point the API route calls;
 everything else in this package (retriever, prompt, generate) is a composable step it wires together.
 """
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from uuid import UUID
@@ -73,8 +74,16 @@ def ask(db: Session, question: str, user: User | None = None, product_id: UUID |
     conversation = _resolve_conversation(db, user, conversation_id, question) if user is not None else None
     history = _load_history(db, conversation.id) if conversation is not None else None
 
-    chunks = retrieve(db, question, product_id=product_id)
-    web_results = search_web(question)
+    # pgvector retrieval and the Tavily web search are independent and each I/O-bound (DB round trip / HTTPS
+    # call) - running them one after another added their latencies together for no reason. Safe to hand
+    # `retrieve` to a worker thread even though SQLAlchemy Sessions aren't thread-safe for concurrent use:
+    # nothing else touches `db` while `.result()` is blocked waiting on it, so only one thread ever has it
+    # in hand at a time - just not always this function's own thread.
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        chunks_future = pool.submit(retrieve, db, question, product_id=product_id)
+        web_future = pool.submit(search_web, question)
+        chunks = chunks_future.result()
+        web_results = web_future.result()
     answer, cited, cited_web = generate_answer(question, chunks, web_results, history=history)
 
     if conversation is not None:
