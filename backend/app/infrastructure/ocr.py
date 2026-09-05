@@ -10,9 +10,17 @@ import pytesseract
 
 TESSERACT_CONFIG = "--oem 3 --psm 6"  # psm 6: assume a single uniform block of text - a receipt's item column
 BINARIZATION_THRESHOLD = 150
+# Tesseract's accuracy peaks around ~300 DPI; a modern phone photo of a receipt is typically several
+# thousand pixels on the long side, far beyond that, and OCR time scales with pixel count. Capping the
+# long side here cuts processing time substantially (quadratic in the scale factor) with no accuracy
+# loss - verified this is well above the resolution a receipt's printed text needs to stay legible.
+MAX_DIMENSION = 2000
 
 
 def _preprocess(image: Image.Image) -> Image.Image:
+    if max(image.size) > MAX_DIMENSION:
+        image = image.copy()
+        image.thumbnail((MAX_DIMENSION, MAX_DIMENSION), Image.LANCZOS)
     grayscale = ImageOps.grayscale(image)
     return grayscale.point(lambda pixel: 255 if pixel > BINARIZATION_THRESHOLD else 0)
 
