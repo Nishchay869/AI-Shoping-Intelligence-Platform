@@ -5,7 +5,14 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   output: "standalone",
   outputFileTracingRoot: path.join(process.cwd()),
-  images: { remotePatterns: [{ protocol: "https", hostname: "images.unsplash.com" }] },
+  images: {
+    remotePatterns: [
+      { protocol: "https", hostname: "images.unsplash.com" },
+      // Real catalog product images, scraped from these retailers' own CDNs (see workers/scrapers/).
+      { protocol: "https", hostname: "m.media-amazon.com" },
+      { protocol: "https", hostname: "rukminim2.flixcart.com" }
+    ]
+  },
   async headers() {
     return [{
       source: "/:path*",
