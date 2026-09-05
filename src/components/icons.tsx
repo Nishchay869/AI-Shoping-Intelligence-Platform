@@ -3,7 +3,7 @@ import type { SVGProps } from "react";
 export type IconName =
   | "home" | "search" | "heart" | "message" | "user" | "bell" | "menu" | "arrow" | "sparkles" | "trend"
   | "x" | "mic" | "receipt" | "logout" | "send" | "restart" | "check" | "quote"
-  | "cpu" | "bag" | "gift" | "shield" | "clock" | "mail" | "eye" | "eye-off" | "edit"
+  | "cpu" | "bag" | "gift" | "shield" | "clock" | "mail" | "eye" | "eye-off" | "edit" | "lock"
   | "social-x" | "social-linkedin" | "social-instagram" | "social-facebook";
 
 const paths: Record<IconName, string> = {
@@ -35,6 +35,7 @@ const paths: Record<IconName, string> = {
   eye: "M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z",
   "eye-off": "M3 3l18 18M9.53 9.53a3 3 0 0 0 4.24 4.24M6.6 6.53C4.08 8.25 1.5 12 1.5 12S5 19 12 19c1.79 0 3.39-.53 4.74-1.29M17.4 17.35C20.15 15.55 22.5 12 22.5 12S19 5 12 5c-.79 0-1.55.08-2.27.24",
   edit: "M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5Z",
+  lock: "M6 10V7a6 6 0 1 1 12 0v3 M5 10h14v10H5V10Z M12 14v3",
   // Social glyphs, redrawn as simple generic pictograms (not brand asset reproductions)
   "social-x": "M5 5l14 14M19 5 5 19",
   "social-linkedin": "M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6Z M2 9h4v12H2V9Z M2 4a2 2 0 1 0 4 0 2 2 0 0 0-4 0Z",

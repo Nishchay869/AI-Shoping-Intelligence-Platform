@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { Icon } from "@/components/icons";
-import { PasswordInput } from "@/components/password-input";
+import { IconInput, PasswordInput } from "@/components/password-input";
 import { supabase } from "@/shared/supabase/client";
 
 /** Registration calls Supabase Auth directly. With "Confirm email" disabled in the Supabase project's
@@ -56,7 +56,7 @@ export default function SignUpPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-surface p-4">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-surface p-4 py-16">
       <Link href="/" className="fixed left-4 top-4 inline-flex items-center gap-2 rounded-full py-1.5 pl-1.5 pr-4 text-sm font-semibold text-slate-500 transition-colors hover:text-brand-700 sm:left-6 sm:top-6">
         <span className="shadow-neu-sm grid h-7 w-7 place-items-center rounded-full">
           <Icon name="arrow" className="h-4 w-4 rotate-180" />
@@ -64,24 +64,17 @@ export default function SignUpPage() {
         Back
       </Link>
 
-      <Link href="/" className="mb-8 flex flex-col items-center gap-1">
-        <span className="flex items-center gap-2 text-xl font-bold text-brand-700">
-          <Image src="/logo-icon.png" alt="" width={36} height={36} className="h-9 w-9" priority />Shopping AI
-        </span>
-        <span className="label-caps text-brand-600/70">AI Intelligence</span>
-      </Link>
+      <section className="surface-elevated w-full max-w-[440px] rounded-[2.75rem] px-7 py-10 text-center sm:px-10 sm:py-12">
+        <Link href="/" className="mx-auto mb-6 flex items-center justify-center">
+          <Image src="/logo-icon.png" alt="Shopping AI" width={48} height={48} className="h-12 w-12" priority />
+        </Link>
+        <h1 className="text-2xl font-bold text-ink">Sign Up</h1>
+        <p className="mt-1 text-sm text-slate-500">Create your account</p>
 
-      <section className="surface-elevated w-full max-w-[480px] rounded-3xl p-8">
-        <h1 className="text-2xl font-bold text-ink">Create your account</h1>
-        <form onSubmit={submit} className="mt-6 space-y-4">
-          <label className="block">
-            <span className="label-caps">Full name</span>
-            <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="input mt-2" placeholder="Nishchay" required />
-          </label>
-          <label className="block">
-            <span className="label-caps">Email</span>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input mt-2" placeholder="you@gmail.com" required />
-          </label>
+        <form onSubmit={submit} className="mt-8 space-y-4 text-left">
+          <IconInput icon="user" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Full name" autoComplete="name" required />
+          <IconInput icon="mail" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" autoComplete="email" required />
+
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block">
               <span className="label-caps">Age</span>
@@ -107,21 +100,20 @@ export default function SignUpPage() {
               </select>
             </label>
           </div>
-          <label className="block">
-            <span className="label-caps">Password</span>
-            <PasswordInput value={password} onChange={setPassword} placeholder="At least 12 characters" minLength={12} required />
-          </label>
-          <label className="block">
-            <span className="label-caps">Confirm password</span>
-            <PasswordInput value={confirmPassword} onChange={setConfirmPassword} placeholder="Re-enter your password" minLength={12} required />
-          </label>
-          {error && <p className="text-sm text-rose-600">{error}</p>}
-          <button className="btn-primary w-full" disabled={loading}>{loading ? "Creating account…" : "Create account"}</button>
+
+          <PasswordInput value={password} onChange={setPassword} placeholder="Password (12+ characters)" minLength={12} required />
+          <PasswordInput value={confirmPassword} onChange={setConfirmPassword} placeholder="Confirm password" minLength={12} required />
+
+          {error && <p className="text-center text-sm text-rose-600">{error}</p>}
+
+          <button className="btn-primary mt-2 w-full rounded-full text-xs uppercase tracking-widest" disabled={loading}>
+            {loading ? "Creating account…" : "Create account"}
+          </button>
           <p className="text-center text-xs leading-relaxed text-slate-500">Save your searches, get price alerts, and pick up recommendations where you left off.</p>
         </form>
-      </section>
 
-      <p className="mt-8 text-sm text-slate-500">Already have an account? <Link href="/auth/sign-in" className="font-bold text-brand-700 hover:underline">Sign in</Link></p>
+        <p className="mt-8 text-sm text-slate-500">Already have an account? <Link href="/auth/sign-in" className="font-bold text-brand-700 hover:underline">Login</Link></p>
+      </section>
     </main>
   );
 }
