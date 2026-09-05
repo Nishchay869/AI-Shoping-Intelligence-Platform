@@ -20,3 +20,4 @@ backend/app/services/assistant/storage
 __pycache__/
 *.pyc
 .DS_Store
+.vercel

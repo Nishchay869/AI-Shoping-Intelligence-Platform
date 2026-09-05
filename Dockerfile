@@ -16,7 +16,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # NEXT_PUBLIC_-prefixed: it's read server-side at request time from the container's real runtime env (env_file
 # in docker-compose.prod.yml), so it deliberately has no build-time value here.
 ARG NEXT_PUBLIC_APP_URL=http://localhost:3000
-ENV NEXT_PUBLIC_APP_URL=https://rniwnafsqkjvcrkwhpwg.supabase.co
+ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
 ARG NEXT_PUBLIC_SUPABASE_URL
 ENV NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
