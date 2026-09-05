@@ -33,7 +33,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
   const [product, setProduct] = useState<CatalogProduct | null>(null);
   const [notFoundState, setNotFoundState] = useState(false);
   const [wishlistId, setWishlistId] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
+  const [wishlistItemId, setWishlistItemId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
 
@@ -49,6 +49,24 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
     return () => { cancelled = true; };
   }, [id]);
 
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await fetch("/api/v1/wishlists", { headers: await authHeaders() });
+        if (!response.ok || cancelled) return;
+        const lists: { id: string; items: { id: string; product: { id: string } }[] }[] = await response.json();
+        if (lists.length > 0) setWishlistId(lists[0].id);
+        for (const list of lists) {
+          const match = list.items.find((item) => item.product.id === id);
+          if (match) { setWishlistId(list.id); setWishlistItemId(match.id); break; }
+        }
+      } catch { /* leave un-wishlisted - the save button still works, just without pre-filled state */ }
+    })();
+    return () => { cancelled = true; };
+  }, [id, user]);
+
   async function ensureWishlistId(): Promise<string> {
     if (wishlistId) return wishlistId;
     const listResponse = await fetch("/api/v1/wishlists", { headers: await authHeaders() });
@@ -60,17 +78,23 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
     return created.id;
   }
 
-  async function saveToWishlist() {
+  async function toggleWishlist() {
     if (!user) { setStatus("Sign in to save items to your wishlist."); return; }
     setSaving(true);
     setStatus(null);
     try {
-      const id_ = await ensureWishlistId();
-      const response = await fetch(`/api/v1/wishlists/${id_}/items`, { method: "POST", headers: { "Content-Type": "application/json", ...(await authHeaders()) }, body: JSON.stringify({ productId: id }) });
-      if (response.ok) { setSaved(true); setStatus("Saved to your wishlist."); }
-      else setStatus("Could not save this item.");
+      if (wishlistItemId && wishlistId) {
+        const response = await fetch(`/api/v1/wishlists/${wishlistId}/items/${wishlistItemId}`, { method: "DELETE", headers: await authHeaders() });
+        if (response.ok) { setWishlistItemId(null); setStatus("Removed from your wishlist."); }
+        else setStatus("Could not update your wishlist.");
+      } else {
+        const id_ = await ensureWishlistId();
+        const response = await fetch(`/api/v1/wishlists/${id_}/items`, { method: "POST", headers: { "Content-Type": "application/json", ...(await authHeaders()) }, body: JSON.stringify({ productId: id }) });
+        if (response.ok) { const created: { id: string } = await response.json(); setWishlistItemId(created.id); setStatus("Saved to your wishlist."); }
+        else setStatus("Could not save this item.");
+      }
     } catch {
-      setStatus("Could not save this item.");
+      setStatus("Could not update your wishlist.");
     } finally {
       setSaving(false);
     }
@@ -96,9 +120,9 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
             <span className="data text-4xl font-extrabold text-ink">{formatPrice(product.current_price_minor, product.currency)}</span>
           </div>
           <div className="mt-6">
-            <button onClick={saveToWishlist} disabled={saving || saved} className="btn-primary">
-              <Icon name="heart" className={`mr-2 h-4 w-4 ${saved ? "fill-white" : ""}`} />
-              {saved ? "Saved to wishlist" : saving ? "Saving…" : "Save to wishlist"}
+            <button onClick={toggleWishlist} disabled={saving} className={wishlistItemId ? "btn-secondary" : "btn-primary"}>
+              <Icon name="heart" className={`mr-2 h-4 w-4 ${wishlistItemId ? "fill-rose-500 text-rose-500" : ""}`} />
+              {saving ? "Saving…" : wishlistItemId ? "Remove from wishlist" : "Save to wishlist"}
             </button>
             {status && <p className="mt-2 text-xs text-slate-500">{status}</p>}
           </div>

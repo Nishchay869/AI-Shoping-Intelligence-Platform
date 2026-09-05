@@ -233,15 +233,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {confirmingLogout && (
         <>
           <button aria-label="Cancel sign out" className="animate-fade-in fixed inset-0 z-[60] bg-slate-950/40 backdrop-blur-sm" onClick={() => setConfirmingLogout(false)} />
-          <div className="animate-scale-in card fixed left-1/2 top-1/2 z-[70] w-full max-w-sm -translate-x-1/2 -translate-y-1/2 p-6 text-center">
-            <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-rose-50 text-rose-600"><Icon name="logout" className="h-5 w-5" /></span>
-            <h2 className="mt-4 text-lg font-bold text-ink">Sign out?</h2>
-            <p className="mt-1 text-sm text-slate-500">You&apos;ll need to sign in again to get back to your wishlist, chat history, and preferences.</p>
-            <div className="mt-6 grid grid-cols-2 gap-3">
-              <button onClick={() => setConfirmingLogout(false)} className="btn-secondary">Cancel</button>
-              <button onClick={confirmSignOut} disabled={signingOut} className="rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-rose-700 disabled:opacity-60">
-                {signingOut ? "Signing out…" : "Sign out"}
-              </button>
+          {/* Centered via flexbox on this outer fixed layer, not transform: translate - a translate-based
+           * centering trick on the card itself would conflict with animate-scale-in's own keyframe
+           * transform (CSS animations replace the whole transform property, not compose with it), which
+           * silently dropped the centering offset and pushed the dialog off-screen. */}
+          <div className="fixed inset-0 z-[70] grid place-items-center p-4">
+            <div className="animate-scale-in card w-full max-w-sm p-6 text-center">
+              <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-rose-50 text-rose-600"><Icon name="logout" className="h-5 w-5" /></span>
+              <h2 className="mt-4 text-lg font-bold text-ink">Sign out?</h2>
+              <p className="mt-1 text-sm text-slate-500">You&apos;ll need to sign in again to get back to your wishlist, chat history, and preferences.</p>
+              <div className="mt-6 grid grid-cols-2 gap-3">
+                <button onClick={() => setConfirmingLogout(false)} className="btn-secondary">Cancel</button>
+                <button onClick={confirmSignOut} disabled={signingOut} className="rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-rose-700 disabled:opacity-60">
+                  {signingOut ? "Signing out…" : "Sign out"}
+                </button>
+              </div>
             </div>
           </div>
         </>
