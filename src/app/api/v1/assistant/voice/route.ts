@@ -1,6 +1,10 @@
 import { env } from "@/shared/config/env";
 import { apiError } from "@/shared/presentation/api";
 
+// Speech-to-text + the LangGraph agent + text-to-speech chained together comfortably exceeds Vercel's
+// default 10s function timeout - see recommendations/route.ts for the failure mode.
+export const maxDuration = 60;
+
 /** Proxies a recorded voice message to the FastAPI voice pipeline (Whisper speech-to-text -> the LangGraph assistant -> OpenAI text-to-speech). */
 export async function POST(request: Request) {
   try {

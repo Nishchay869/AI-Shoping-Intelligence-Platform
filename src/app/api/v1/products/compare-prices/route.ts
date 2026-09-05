@@ -2,6 +2,10 @@ import { z } from "zod";
 import { env } from "@/shared/config/env";
 import { apiError } from "@/shared/presentation/api";
 
+// Live web search + LLM extraction can run past Vercel's default 10s function timeout - see
+// recommendations/route.ts for the failure mode.
+export const maxDuration = 60;
+
 const inputSchema = z.object({ productName: z.string().min(2).max(200) });
 
 /** Proxies to the FastAPI live price-comparison endpoint (Tavily web search + Gemini extraction). */

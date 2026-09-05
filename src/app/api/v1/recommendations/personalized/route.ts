@@ -1,6 +1,10 @@
 import { env } from "@/shared/config/env";
 import { apiError } from "@/shared/presentation/api";
 
+// Embedding search over tracked activity can run past Vercel's default 10s function timeout - see
+// ../route.ts for the failure mode.
+export const maxDuration = 60;
+
 /** Proxies to the behavioral, embeddings-only recommendation engine - built from the shopper's own tracked activity. */
 export async function GET(request: Request) {
   try {

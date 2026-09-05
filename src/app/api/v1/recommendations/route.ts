@@ -2,6 +2,11 @@ import { z } from "zod";
 import { env } from "@/shared/config/env";
 import { apiError } from "@/shared/presentation/api";
 
+// The backend chains multiple LLM calls plus a live web search here and can take 20-30s+ - well past
+// Vercel's default 10s function timeout, which would otherwise kill the connection before the backend
+// responds and surface as a client-side "Failed to fetch".
+export const maxDuration = 60;
+
 const inputSchema = z.object({
   budget: z.number().nonnegative().optional(),
   purpose: z.string().min(3).max(300),

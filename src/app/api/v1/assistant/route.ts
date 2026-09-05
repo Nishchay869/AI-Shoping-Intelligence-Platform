@@ -2,6 +2,10 @@ import { z } from "zod";
 import { env } from "@/shared/config/env";
 import { apiError } from "@/shared/presentation/api";
 
+// The LangGraph agent can chain several tool calls (web search, product lookups) before answering,
+// well past Vercel's default 10s function timeout - see recommendations/route.ts for the failure mode.
+export const maxDuration = 60;
+
 const inputSchema = z.object({
   message: z.string().min(1).max(2000),
   threadId: z.string().optional()

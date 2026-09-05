@@ -1,6 +1,10 @@
 import { env } from "@/shared/config/env";
 import { apiError } from "@/shared/presentation/api";
 
+// OCR plus LLM structured extraction can run past Vercel's default 10s function timeout on a large or
+// noisy image - see recommendations/route.ts for the failure mode.
+export const maxDuration = 60;
+
 /** Proxies an uploaded receipt photo to the FastAPI receipt scanner (Tesseract OCR + LLM structured extraction). */
 export async function POST(request: Request) {
   try {
