@@ -1,8 +1,8 @@
 """Orchestration entry point: run one turn through the LangGraph agent, scoped to a persistent thread."""
+from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from uuid import uuid4
-from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from app.core.exceptions import ServiceUnavailableError
 from app.models import User
 from app.services.assistant.graph import get_graph
@@ -34,6 +34,7 @@ def _scoped_thread_id(user: User | None, key: str) -> str:
 def ask(message: str, user: User | None = None, thread_id: str | None = None) -> AssistantAnswer:
     """Send one message to the assistant. Omit thread_id to start a new conversation; pass the one returned
     from a prior call to continue it - the LangGraph checkpointer resumes the full message history."""
+    from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
     key = thread_id or str(uuid4())
     config = {"configurable": {"thread_id": _scoped_thread_id(user, key)}}
     graph = get_graph()

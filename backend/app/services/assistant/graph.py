@@ -13,19 +13,21 @@ state for that thread between HTTP requests, so the next call with the same thre
 where the conversation left off. This demo uses a local SQLite checkpointer (genuinely persistent, no
 server required); swapping to `langgraph-checkpoint-postgres`'s PostgresSaver for a multi-instance
 production deployment is a one-line change since every checkpointer implements the same interface.
+
+langchain/langgraph/tools.py's imports are deliberately local to the two functions below, not at module
+level: this whole package is pulled in at API startup (app.main -> api_router -> assistant/chat routes),
+and that stack alone measured ~205MB of resident memory - over half this process's total footprint on a
+512MB-RAM deployment (Render's free tier), which was tipping the container into repeated OOM kills.
+Deferring to first actual use means the API can start cheaply and only pays that cost on the first
+assistant/chat request.
 """
+from __future__ import annotations
 import sqlite3
 from collections.abc import Callable
 from functools import lru_cache
 from pathlib import Path
-from langchain_core.messages import SystemMessage
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langgraph.checkpoint.sqlite import SqliteSaver
-from langgraph.graph import START, MessagesState, StateGraph
-from langgraph.graph.state import CompiledStateGraph
-from langgraph.prebuilt import ToolNode, tools_condition
+from typing import Any
 from app.core.config import get_settings
-from app.services.assistant.tools import ALL_TOOLS
 
 CHECKPOINT_PATH = Path(__file__).resolve().parent / "storage" / "checkpoints.sqlite3"
 
@@ -53,15 +55,23 @@ name, price, or the one key spec that answers the question), so it stands out at
 never a whole sentence, and skip it entirely if nothing is more important than the rest."""
 
 
-def _default_model_node(state: MessagesState) -> dict:
+def _default_model_node(state: Any) -> dict:
+    from langchain_core.messages import SystemMessage
+    from langchain_google_genai import ChatGoogleGenerativeAI
+    from app.services.assistant.tools import ALL_TOOLS
     settings = get_settings()
     model = ChatGoogleGenerativeAI(model=settings.assistant_chat_model, api_key=settings.gemini_api_key, temperature=0).bind_tools(ALL_TOOLS)
     response = model.invoke([SystemMessage(content=SYSTEM_PROMPT), *state["messages"]])
     return {"messages": [response]}
 
 
-def build_graph(model_node: Callable[[MessagesState], dict] | None = None) -> CompiledStateGraph:
+def build_graph(model_node: Callable[[Any], dict] | None = None) -> Any:
     """`model_node` is overridable so tests can substitute a scripted fake model without needing a real API key."""
+    from langgraph.checkpoint.sqlite import SqliteSaver
+    from langgraph.graph import START, MessagesState, StateGraph
+    from langgraph.prebuilt import ToolNode, tools_condition
+    from app.services.assistant.tools import ALL_TOOLS
+
     builder = StateGraph(MessagesState)
     builder.add_node("model", model_node or _default_model_node)
     builder.add_node("tools", ToolNode(ALL_TOOLS))
@@ -76,6 +86,6 @@ def build_graph(model_node: Callable[[MessagesState], dict] | None = None) -> Co
 
 
 @lru_cache
-def get_graph() -> CompiledStateGraph:
+def get_graph() -> Any:
     """Build once per process - the SQLite connection and compiled graph are reused across requests."""
     return build_graph()
