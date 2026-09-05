@@ -20,14 +20,17 @@
 
 All four blocks are concatenated into one dense matrix. Tree-based models (Random Forest, XGBoost) are
 scale-invariant per feature, so no additional normalization is needed before training.
+
+torch/transformers/sentence-transformers/sklearn are deliberately imported inside the functions/methods below,
+not at module level: this module is pulled into the API server at startup (services/reviews.py ->
+fake_review_detection -> here), and those imports alone are slow enough on a CPU-constrained deployment (e.g.
+Render's free tier) to blow past the platform's port-binding timeout. `from __future__ import annotations`
+lets the type hints below still reference those libraries' classes without forcing an eager import just to
+resolve them.
 """
+from __future__ import annotations
 import re
 import numpy as np
-import torch
-from sentence_transformers import SentenceTransformer
-from sklearn.decomposition import TruncatedSVD
-from sklearn.feature_extraction.text import TfidfVectorizer
-from transformers import AutoModel, AutoTokenizer
 
 BERT_MODEL_NAME = "bert-base-uncased"          # swap for "distilbert-base-uncased" for a faster, smaller model
 SBERT_MODEL_NAME = "all-MiniLM-L6-v2"
@@ -37,7 +40,8 @@ MAX_TOKEN_LENGTH = 256
 _WORD = re.compile(r"[A-Za-z']+")
 
 
-def _device() -> torch.device:
+def _device():
+    import torch
     if torch.cuda.is_available(): return torch.device("cuda")
     if torch.backends.mps.is_available(): return torch.device("mps")
     return torch.device("cpu")
@@ -47,6 +51,8 @@ def _device() -> torch.device:
 
 def fit_tfidf_svd(train_texts: list[str], n_components: int = SVD_COMPONENTS):
     """Fit the TF-IDF vectorizer and SVD reducer on TRAINING text only, to avoid leaking test vocabulary/variance."""
+    from sklearn.decomposition import TruncatedSVD
+    from sklearn.feature_extraction.text import TfidfVectorizer
     vectorizer = TfidfVectorizer(max_features=TFIDF_MAX_FEATURES, ngram_range=(1, 2), sublinear_tf=True, stop_words="english")
     tfidf_matrix = vectorizer.fit_transform(train_texts)
     n_components = min(n_components, tfidf_matrix.shape[1] - 1, tfidf_matrix.shape[0] - 1)
@@ -55,7 +61,7 @@ def fit_tfidf_svd(train_texts: list[str], n_components: int = SVD_COMPONENTS):
     return vectorizer, svd
 
 
-def transform_tfidf_svd(texts: list[str], vectorizer: TfidfVectorizer, svd: TruncatedSVD) -> np.ndarray:
+def transform_tfidf_svd(texts: list[str], vectorizer: "TfidfVectorizer", svd: "TruncatedSVD") -> np.ndarray:
     return svd.transform(vectorizer.transform(texts)).astype(np.float32)
 
 
@@ -65,21 +71,23 @@ class BertEmbedder:
     """Loads bert-base-uncased once and mean-pools its last hidden layer, ignoring padding via the attention mask."""
 
     def __init__(self, model_name: str = BERT_MODEL_NAME):
+        from transformers import AutoModel, AutoTokenizer
         self.device = _device()
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModel.from_pretrained(model_name).to(self.device).eval()
 
-    @torch.no_grad()
     def embed(self, texts: list[str], batch_size: int = 16) -> np.ndarray:
-        vectors = []
-        for start in range(0, len(texts), batch_size):
-            batch = texts[start:start + batch_size]
-            encoded = self.tokenizer(batch, return_tensors="pt", padding=True, truncation=True, max_length=MAX_TOKEN_LENGTH).to(self.device)
-            hidden = self.model(**encoded).last_hidden_state
-            mask = encoded["attention_mask"].unsqueeze(-1).float()
-            pooled = (hidden * mask).sum(dim=1) / mask.sum(dim=1).clamp(min=1e-9)
-            vectors.append(pooled.cpu().numpy())
-        return np.concatenate(vectors, axis=0).astype(np.float32)
+        import torch
+        with torch.no_grad():
+            vectors = []
+            for start in range(0, len(texts), batch_size):
+                batch = texts[start:start + batch_size]
+                encoded = self.tokenizer(batch, return_tensors="pt", padding=True, truncation=True, max_length=MAX_TOKEN_LENGTH).to(self.device)
+                hidden = self.model(**encoded).last_hidden_state
+                mask = encoded["attention_mask"].unsqueeze(-1).float()
+                pooled = (hidden * mask).sum(dim=1) / mask.sum(dim=1).clamp(min=1e-9)
+                vectors.append(pooled.cpu().numpy())
+            return np.concatenate(vectors, axis=0).astype(np.float32)
 
 
 # ---- 3. Sentence-Transformer embeddings -------------------------------------
@@ -88,6 +96,7 @@ class SentenceEmbedder:
     """A model fine-tuned so that embedding distance reflects semantic similarity - distinct from raw BERT above."""
 
     def __init__(self, model_name: str = SBERT_MODEL_NAME):
+        from sentence_transformers import SentenceTransformer
         self.model = SentenceTransformer(model_name, device=str(_device()))
 
     def embed(self, texts: list[str], batch_size: int = 32) -> np.ndarray:
