@@ -85,7 +85,9 @@ export function AssistantWidget() {
   return (
     <>
       {open && (
-        <div className={`surface-elevated fixed bottom-24 right-6 z-50 flex h-[560px] w-[380px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-3xl ${closing ? "animate-scale-out" : "animate-scale-in"}`} style={{ transformOrigin: "bottom right" }}>
+        <>
+          <button aria-label="Close assistant panel" className="fixed inset-0 z-40" onClick={closePanel} />
+          <div className={`surface-elevated fixed bottom-24 right-6 z-50 flex h-[560px] w-[380px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-3xl ${closing ? "animate-scale-out" : "animate-scale-in"}`} style={{ transformOrigin: "bottom right" }}>
           <div className="flex items-center justify-between bg-gradient-to-r from-brand-700 to-brand-600 px-4 py-3 text-white">
             <div className="flex items-center gap-3">
               <span className="grid h-8 w-8 place-items-center rounded-full bg-white/15"><Icon name="sparkles" className="h-4 w-4" /></span>
@@ -150,7 +152,8 @@ export function AssistantWidget() {
               <button type="submit" className="btn-primary" aria-label="Send message" disabled={loading}><Icon name="send" className="h-4 w-4" /></button>
             </div>
           </form>
-        </div>
+          </div>
+        </>
       )}
 
       {!open && (
@@ -159,7 +162,8 @@ export function AssistantWidget() {
           aria-label="Open AI shopping assistant"
           className="fixed bottom-6 right-6 z-50 grid h-14 w-14 place-items-center rounded-full bg-gradient-to-br from-brand-600 to-violet-600 text-white shadow-neu-brand transition-all duration-200 hover:scale-110 active:scale-95 active:shadow-neu-brand-inset"
         >
-          <Icon name="message" className="h-6 w-6" />
+          <span aria-hidden className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-400 opacity-40" />
+          <Icon name="sparkles" className="relative h-6 w-6 animate-icon-glint" />
         </button>
       )}
     </>

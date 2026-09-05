@@ -1,21 +1,61 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
-import { ProductCard } from "@/components/ui";
+import { useEffect, useState } from "react";
 import { Icon, type IconName } from "@/components/icons";
-import { products, formatPrice } from "@/lib/mock-data";
+import { authHeaders } from "@/shared/auth/token";
 import { displayNameFor, useCurrentUser } from "@/shared/auth/use-current-user";
 
-const drops = products.filter((p) => p.trend === "down");
+type CatalogProduct = { id: string; title: string; brand: string | null; image_url: string | null; currency: string; current_price_minor: number; retailer: string };
+type WishlistItem = { id: string; product: CatalogProduct; target_price_minor: number | null };
+type Wishlist = { id: string; items: WishlistItem[] };
+type PersonalizedItem = { rank: number; product: CatalogProduct; similarity: number; reason: string };
 
-/** Dashboard summarizes tracked offers and routes users to their most useful next action. */
+const formatPrice = (minorUnits: number, currency: string) => new Intl.NumberFormat("en-IN", { style: "currency", currency, maximumFractionDigits: 0 }).format(minorUnits / 100);
+const RETAILER_LABELS: Record<string, string> = { amazon: "Amazon", flipkart: "Flipkart", myntra: "Myntra" };
+
+/** Dashboard summarizes the shopper's own real activity - wishlist size, configured price alerts, distinct
+ * tracked stores, and personalized picks - rather than placeholder numbers. There's no price-history data
+ * yet for a freshly seeded catalog, so "potential savings" is computed from what's actually there (0, if
+ * nothing has dropped in price yet) instead of an invented figure. */
 export default function DashboardPage() {
-  const name = displayNameFor(useCurrentUser());
+  const user = useCurrentUser();
+  const name = displayNameFor(user);
+  const [wishlists, setWishlists] = useState<Wishlist[] | null>(null);
+  const [personalized, setPersonalized] = useState<PersonalizedItem[] | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await fetch("/api/v1/wishlists", { headers: await authHeaders() });
+        if (!cancelled) setWishlists(response.ok ? await response.json() : []);
+      } catch { if (!cancelled) setWishlists([]); }
+    })();
+    (async () => {
+      try {
+        const response = await fetch("/api/v1/recommendations/personalized", { headers: await authHeaders() });
+        if (!cancelled) setPersonalized(response.ok ? (await response.json()).items : []);
+      } catch { if (!cancelled) setPersonalized([]); }
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
+
+  const allItems = wishlists?.flatMap((list) => list.items) ?? [];
+  const activeAlerts = allItems.filter((item) => item.target_price_minor !== null).length;
+  const trackedStores = new Set(allItems.map((item) => item.product.retailer)).size;
+  // No real price-history is recorded yet for a freshly seeded catalog (PriceHistory only fills in once
+  // a tracked offer is actually re-scraped and its price changes) - 0 is the honest current answer, not a
+  // placeholder, until that pipeline has run at least once.
+  const potentialSavingsMinor = 0;
+  const currency = allItems[0]?.product.currency ?? "INR";
+
   const stats: { label: string; value: string; icon: IconName; emphasize?: boolean }[] = [
-    { label: "WISHLIST ITEMS", value: "12", icon: "heart" },
-    { label: "ACTIVE ALERTS", value: `${drops.length}`, icon: "trend" },
-    { label: "POTENTIAL SAVINGS", value: "₹8,400", icon: "sparkles", emphasize: true },
-    { label: "TRACKED STORES", value: "3", icon: "home" }
+    { label: "WISHLIST ITEMS", value: wishlists === null ? "…" : `${allItems.length}`, icon: "heart" },
+    { label: "ACTIVE ALERTS", value: wishlists === null ? "…" : `${activeAlerts}`, icon: "trend" },
+    { label: "POTENTIAL SAVINGS", value: formatPrice(potentialSavingsMinor, currency), icon: "sparkles", emphasize: true },
+    { label: "TRACKED STORES", value: wishlists === null ? "…" : `${trackedStores}`, icon: "home" }
   ];
 
   return (
@@ -24,7 +64,9 @@ export default function DashboardPage() {
         <h1 className="text-3xl font-bold text-ink">Welcome back{name && `, ${name}`}</h1>
         <div className="mt-2 flex items-center gap-2">
           <span className="flex h-2 w-2 animate-pulse rounded-full bg-brand-600" />
-          <p className="text-slate-500">{drops.length} price drops this week on items you&apos;re watching</p>
+          <p className="text-slate-500">
+            {wishlists === null ? "Loading your activity…" : allItems.length === 0 ? "Nothing tracked yet - save an item to start watching its price." : `Tracking ${allItems.length} item${allItems.length === 1 ? "" : "s"} across ${trackedStores} store${trackedStores === 1 ? "" : "s"}`}
+          </p>
         </div>
       </section>
 
@@ -45,26 +87,23 @@ export default function DashboardPage() {
       <section className="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
         <div className="card overflow-hidden">
           <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-            <h2 className="text-lg font-bold text-ink">Recent price drops</h2>
+            <h2 className="text-lg font-bold text-ink">Your tracked items</h2>
             <Link href="/wishlist" className="label-caps text-brand-600 hover:underline">View all</Link>
           </div>
           <div className="divide-y divide-slate-100">
-            {drops.map((p) => (
-              <Link key={p.id} href={`/products/${p.id}`} className="group flex items-center gap-4 p-4 transition-colors hover:bg-slate-50 sm:p-6">
-                <Image src={p.image} width={64} height={64} alt="" className="h-16 w-16 flex-shrink-0 rounded-lg border border-slate-100 object-cover" />
+            {allItems.slice(0, 5).map((item) => (
+              <Link key={item.id} href={`/products/${item.product.id}`} className="group flex items-center gap-4 p-4 transition-colors hover:bg-slate-50 sm:p-6">
+                {item.product.image_url && <Image src={item.product.image_url} width={64} height={64} alt="" className="h-16 w-16 flex-shrink-0 rounded-lg border border-slate-100 object-cover" />}
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-ink group-hover:text-brand-700">{p.title}</p>
-                  <p className="mt-1 text-xs text-slate-500">{p.retailer}</p>
+                  <p className="truncate text-sm font-semibold text-ink group-hover:text-brand-700">{item.product.title}</p>
+                  <p className="mt-1 text-xs text-slate-500">{RETAILER_LABELS[item.product.retailer] ?? item.product.retailer}</p>
                 </div>
-                <div className="text-right">
-                  <p className="data text-xs text-slate-400 line-through">{formatPrice(p.previousPrice, p.currency)}</p>
-                  <div className="mt-1 flex items-center justify-end gap-2">
-                    <span className="pill bg-brand-50 text-brand-700">{Math.round((1 - p.currentPrice / p.previousPrice) * 100)}% off</span>
-                    <p className="data font-bold text-brand-700">{formatPrice(p.currentPrice, p.currency)}</p>
-                  </div>
-                </div>
+                <p className="data font-bold text-brand-700">{formatPrice(item.product.current_price_minor, item.product.currency)}</p>
               </Link>
             ))}
+            {wishlists !== null && allItems.length === 0 && (
+              <p className="p-6 text-center text-sm text-slate-400">No items tracked yet. <Link href="/for-you" className="font-semibold text-brand-600 hover:underline">Browse the catalog</Link> and save something to your wishlist.</p>
+            )}
           </div>
         </div>
 
@@ -75,14 +114,17 @@ export default function DashboardPage() {
               <h3 className="font-bold text-ink">Your AI picks</h3>
             </div>
             <div className="mb-6 space-y-3">
-              {products.slice(0, 2).map((p) => (
-                <div key={p.id} className="flex items-center gap-3 rounded-lg border border-slate-100 bg-slate-50 p-3">
-                  <Image src={p.image} width={48} height={48} alt="" className="h-12 w-12 rounded-lg border border-slate-200 object-cover" />
-                  <p className="truncate text-sm font-bold text-ink">{p.title}</p>
+              {personalized?.slice(0, 2).map((item) => (
+                <div key={item.product.id} className="flex items-center gap-3 rounded-lg border border-slate-100 bg-slate-50 p-3">
+                  {item.product.image_url && <Image src={item.product.image_url} width={48} height={48} alt="" className="h-12 w-12 rounded-lg border border-slate-200 object-cover" />}
+                  <p className="truncate text-sm font-bold text-ink">{item.product.title}</p>
                 </div>
               ))}
+              {personalized !== null && personalized.length === 0 && (
+                <p className="text-sm text-slate-400">Search, wishlist, or view a few products first - personalized picks are built from your own activity.</p>
+              )}
             </div>
-            <Link href="/recommendations" className="btn-primary label-caps w-full">View all recommendations</Link>
+            <Link href="/for-you" className="btn-primary label-caps w-full">View all recommendations</Link>
           </div>
 
           <div className="card p-6">
@@ -97,16 +139,6 @@ export default function DashboardPage() {
             </Link>
           </div>
         </aside>
-      </section>
-
-      <section>
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-ink">Recently viewed</h2>
-          <Link href="/search" className="label-caps text-brand-600 hover:underline">Discover more</Link>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {products.map((p) => <ProductCard key={p.id} product={p} />)}
-        </div>
       </section>
     </div>
   );

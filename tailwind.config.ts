@@ -60,7 +60,11 @@ export default {
         // A document-scanner style sweep: a glowing line travels down the receipt preview while OCR/LLM
         // extraction is in flight, then resets - `top` (not `transform`) so it tracks the container's own
         // height regardless of image aspect ratio.
-        "scan-sweep": { "0%, 100%": { top: "0%" }, "50%": { top: "calc(100% - 2px)" } }
+        "scan-sweep": { "0%, 100%": { top: "0%" }, "50%": { top: "calc(100% - 2px)" } },
+        // Subtle continuous "breathing" glint on the AI assistant launcher's icon, so the closed bubble
+        // reads as alive/AI-powered rather than a static button - independent of the button's own
+        // hover-scale transform, which stays on the button element itself.
+        "icon-glint": { "0%, 100%": { transform: "scale(1) rotate(0deg)" }, "50%": { transform: "scale(1.15) rotate(8deg)" } }
       },
       animation: {
         "fade-slide-up": "fade-slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both",
@@ -75,7 +79,8 @@ export default {
         "mark-highlight": "mark-highlight 1s cubic-bezier(0.65, 0, 0.35, 1) 0.7s both",
         shimmer: "shimmer 2.5s linear infinite",
         marquee: "marquee 32s linear infinite",
-        "scan-sweep": "scan-sweep 1.8s cubic-bezier(0.65, 0, 0.35, 1) infinite"
+        "scan-sweep": "scan-sweep 1.8s cubic-bezier(0.65, 0, 0.35, 1) infinite",
+        "icon-glint": "icon-glint 2.4s ease-in-out infinite"
       }
     }
   },
