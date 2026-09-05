@@ -124,7 +124,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   async function confirmSignOut() {
     setSigningOut(true);
     await clearToken();
-    router.push("/auth/sign-in");
+    router.push("/");
   }
 
   function closeDrawer() {

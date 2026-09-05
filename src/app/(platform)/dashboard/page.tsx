@@ -124,7 +124,7 @@ export default function DashboardPage() {
                 <p className="text-sm text-slate-400">Search, wishlist, or view a few products first - personalized picks are built from your own activity.</p>
               )}
             </div>
-            <Link href="/for-you" className="btn-primary label-caps w-full">View all recommendations</Link>
+            <Link href="/for-you" className="btn-primary label-caps w-full text-white">View all recommendations</Link>
           </div>
 
           <div className="card p-6">
