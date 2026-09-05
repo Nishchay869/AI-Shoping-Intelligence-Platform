@@ -1,5 +1,6 @@
 from uuid import UUID
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session
 from app.api.deps import get_current_user, get_current_user_optional, rate_limit
 from app.db.session import get_db
@@ -18,7 +19,11 @@ async def scan_uploaded_receipt(image: UploadFile = File(...), db: Session = Dep
     if not image_bytes: raise HTTPException(status_code=400, detail="Uploaded file is empty")
     if len(image_bytes) > MAX_IMAGE_BYTES: raise HTTPException(status_code=413, detail="Image is too large (10MB max)")
     try:
-        return scan_receipt(db, image_bytes, user)
+        # scan_receipt shells out to Tesseract and blocks for real wall-clock time; calling it directly
+        # would freeze this process's entire async event loop (single worker) for that whole duration,
+        # starving every other concurrent request and the platform's own health check. run_in_threadpool
+        # keeps the event loop free while it runs.
+        return await run_in_threadpool(scan_receipt, db, image_bytes, user)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
 

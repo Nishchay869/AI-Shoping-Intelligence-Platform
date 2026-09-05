@@ -1,5 +1,6 @@
 from uuid import UUID
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from app.api.deps import rate_limit
@@ -40,7 +41,10 @@ async def search_products_by_image(image: UploadFile = File(...), top_k: int = Q
     if not image_bytes: raise HTTPException(status_code=400, detail="Uploaded file is empty")
     if len(image_bytes) > MAX_IMAGE_BYTES: raise HTTPException(status_code=413, detail="Image is too large (10MB max)")
     try:
-        catalog_matches, identified_as, web_listings = search_by_image(db, image_bytes, image.content_type or "image/jpeg", top_k=top_k)
+        # search_by_image runs CLIP inference (blocking, CPU-bound) and would otherwise freeze this
+        # process's entire async event loop for its full duration - see receipts.py's scan route for the
+        # same fix and why it matters on a single-worker deployment.
+        catalog_matches, identified_as, web_listings = await run_in_threadpool(search_by_image, db, image_bytes, image.content_type or "image/jpeg", top_k=top_k)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
     return ImageSearchResponse(
