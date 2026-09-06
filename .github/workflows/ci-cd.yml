@@ -131,9 +131,14 @@ jobs:
           push: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          # src/shared/config/env.ts validates these at build time (zod .url()/.min(1)), so an unset
+          # secret is passed through as "" and hard-fails `next build`. APP_URL and SUPABASE_URL have
+          # safe public defaults (the URL already appears in plaintext in the test job above); the
+          # ANON_KEY is a publishable key but still repo-specific - it must be set as an Actions secret
+          # or the deployed frontend ships with broken auth.
           build-args: |
-            NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL }}
-            NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+            NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL || 'http://localhost:3000' }}
+            NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://rniwnafsqkjvcrkwhpwg.supabase.co' }}
             NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
           tags: |
             ${{ steps.img.outputs.prefix }}-frontend:latest
