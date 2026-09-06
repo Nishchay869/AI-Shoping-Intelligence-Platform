@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon, type IconName } from "./icons";
 
 // The four feature links point at public /features pages (description, how-it-works, usage guide,
@@ -27,10 +27,24 @@ const NAV_ITEMS: { href: string; label: string; icon: IconName }[] = [
  * (plus sign in) in a dropdown instead of dropping them. */
 export function SiteNav() {
   const [open, setOpen] = useState(false);
+  // At the very top of the page the pill floats over the hero with a light frost. Once the page
+  // scrolls, arbitrary content slides under it, so it deepens its blur/opacity/shadow (the
+  // `[data-scrolled="true"]` state) to stay a legible layer above whatever is passing beneath.
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
     <div className="animate-nav-in fixed inset-x-0 top-4 z-50 px-4 sm:top-5 sm:px-6">
-      <nav className="nav-glass mx-auto flex h-16 max-w-7xl items-center justify-between rounded-full pl-4 pr-3 sm:pl-6 sm:pr-4">
+      <nav
+        data-scrolled={scrolled}
+        className="nav-glass relative z-10 mx-auto flex h-16 max-w-7xl items-center justify-between rounded-full pl-4 pr-3 sm:pl-6 sm:pr-4"
+      >
         <Link href="/" className="group flex shrink-0 items-center gap-2.5" onClick={() => setOpen(false)}>
           <Image
             src="/logo-icon.png"
@@ -82,20 +96,31 @@ export function SiteNav() {
       </nav>
 
       {open && (
-        <div className="nav-glass-panel animate-scale-in mx-auto mt-2 max-w-7xl origin-top rounded-3xl p-3 lg:hidden">
-          {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-slate-600 transition-all duration-500 ease-elastic hover:scale-[1.02] hover:bg-white/60 hover:text-brand-700"
-            >
-              <Icon name={item.icon} className="h-4 w-4 text-slate-400" />
-              {item.label}
-            </Link>
-          ))}
-          <Link href="/auth/sign-in" onClick={() => setOpen(false)} className="btn-primary mt-2 w-full justify-center rounded-2xl">Sign in</Link>
-        </div>
+        <>
+          {/* Dim + blur the page behind the dropdown so the menu reads as a layer above the content,
+           * not just another card sitting on it. Tapping the backdrop closes the menu. */}
+          <button
+            type="button"
+            aria-label="Close menu"
+            tabIndex={-1}
+            onClick={() => setOpen(false)}
+            className="animate-fade-in fixed inset-0 z-0 h-full w-full cursor-default bg-slate-900/20 backdrop-blur-md lg:hidden"
+          />
+          <div className="nav-glass-panel animate-scale-in relative z-10 mx-auto mt-2 max-w-7xl origin-top rounded-3xl p-3 lg:hidden">
+            {NAV_ITEMS.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-slate-600 transition-all duration-500 ease-elastic hover:scale-[1.02] hover:bg-white/60 hover:text-brand-700"
+              >
+                <Icon name={item.icon} className="h-4 w-4 text-slate-400" />
+                {item.label}
+              </Link>
+            ))}
+            <Link href="/auth/sign-in" onClick={() => setOpen(false)} className="btn-primary mt-2 w-full justify-center rounded-2xl">Sign in</Link>
+          </div>
+        </>
       )}
     </div>
   );

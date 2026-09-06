@@ -53,6 +53,21 @@
       inset 0 -10px 24px -16px rgba(255, 255, 255, 0.7),
       0 24px 48px -20px rgba(67, 56, 202, 0.4),
       0 4px 14px rgba(13, 28, 47, 0.08);
+    transition:
+      background-color 0.35s ease,
+      backdrop-filter 0.35s ease,
+      border-color 0.35s ease,
+      box-shadow 0.35s ease;
+  }
+  /* Once the page has scrolled, page content passes under the pill - thicken the frost so the nav
+   * stays a distinct, readable layer instead of blending into whatever scrolls beneath it. */
+  .nav-glass[data-scrolled="true"] {
+    @apply border-white/80 bg-white/65 backdrop-blur-3xl backdrop-saturate-200;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
+      inset 0 -10px 24px -16px rgba(255, 255, 255, 0.8),
+      0 28px 60px -18px rgba(67, 56, 202, 0.5),
+      0 8px 22px rgba(13, 28, 47, 0.14);
   }
   /* The drifting highlight band itself - a wide, blurred, diagonal streak of light/brand tint that
    * glides back and forth (see `liquid-sheen` keyframes), read together as light moving on water. */
