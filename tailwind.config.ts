@@ -58,7 +58,10 @@ export default {
         "drawer-in": { "0%": { opacity: "0", transform: "translateX(-16px)" }, "100%": { opacity: "1", transform: "translateX(0)" } },
         "drawer-out": { "0%": { opacity: "1", transform: "translateX(0)" }, "100%": { opacity: "0", transform: "translateX(-16px)" } },
         "float-slow": { "0%, 100%": { transform: "translateY(0)" }, "50%": { transform: "translateY(-10px)" } },
-        "nav-in": { "0%": { opacity: "0", transform: "translateY(-18px) scale(0.96)" }, "100%": { opacity: "1", transform: "translateY(0) scale(1)" } },
+        // Ends at `transform: none` (not an identity translate/scale) so the settled navbar has no
+        // lingering transform - a transformed ancestor makes a descendant's backdrop-filter sample the
+        // wrong region on mobile Safari/Chrome, which was killing the pill's frost below `lg`.
+        "nav-in": { "0%": { opacity: "0", transform: "translateY(-18px) scale(0.96)" }, "100%": { opacity: "1", transform: "none" } },
         "mark-highlight": { "0%": { backgroundSize: "0% 0.85em" }, "100%": { backgroundSize: "100% 0.85em" } },
         shimmer: { "0%": { backgroundPosition: "-200% 0" }, "100%": { backgroundPosition: "200% 0" } },
         marquee: { "0%": { transform: "translateX(0)" }, "100%": { transform: "translateX(-50%)" } },

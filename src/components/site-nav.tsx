@@ -54,17 +54,16 @@ export function SiteNav() {
             className="h-9 w-9 transition-transform duration-500 ease-elastic group-hover:-rotate-6 group-hover:scale-110"
             priority
           />
-          {/* "AI SIP" (AI Shopping Intelligence Platform) - the wordmark next to the logo. A shimmering
-           * gradient fill sweeps through it continuously, like light gliding across water, and a tiny
-           * caps subtitle underneath reads it out in full on the first pass. */}
-          <span className="hidden sm:flex sm:flex-col sm:leading-none">
+          {/* "AI-SIP" (AI Shopping Intelligence Platform) - the wordmark next to the logo, shown at every
+           * width (a bare logo with no name read as broken on phones). A shimmering gradient fill sweeps
+           * through it continuously, like light gliding across water. */}
+          <span className="flex flex-col leading-none">
             <span
-              className="animate-text-shimmer bg-gradient-to-r from-brand-700 via-violet-500 via-40% to-brand-600 bg-clip-text text-xl font-extrabold tracking-tight text-transparent"
+              className="animate-text-shimmer bg-gradient-to-r from-brand-700 via-violet-500 via-40% to-brand-600 bg-clip-text text-lg font-extrabold tracking-tight text-transparent sm:text-xl"
               style={{ backgroundSize: "200% auto" }}
             >
               AI-SIP
             </span>
-            {/* <span className="label-caps mt-1 text-[9px] tracking-[0.22em] text-brand-600/60">Shopping Intelligence</span> */}
           </span>
         </Link>
 
@@ -104,7 +103,7 @@ export function SiteNav() {
             aria-label="Close menu"
             tabIndex={-1}
             onClick={() => setOpen(false)}
-            className="animate-fade-in fixed inset-0 z-0 h-full w-full cursor-default bg-slate-900/20 backdrop-blur-md lg:hidden"
+            className="animate-fade-in fixed inset-0 z-0 h-full w-full cursor-default bg-slate-900/40 backdrop-blur-lg lg:hidden"
           />
           <div className="nav-glass-panel animate-scale-in relative z-10 mx-auto mt-2 max-w-7xl origin-top rounded-3xl p-3 lg:hidden">
             {NAV_ITEMS.map((item) => (
@@ -112,7 +111,7 @@ export function SiteNav() {
                 key={item.href}
                 href={item.href}
                 onClick={() => setOpen(false)}
-                className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-slate-600 transition-all duration-500 ease-elastic hover:scale-[1.02] hover:bg-white/60 hover:text-brand-700"
+                className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 transition-all duration-500 ease-elastic hover:scale-[1.02] hover:bg-brand-50 hover:text-brand-700"
               >
                 <Icon name={item.icon} className="h-4 w-4 text-slate-400" />
                 {item.label}
