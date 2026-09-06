@@ -42,6 +42,33 @@
   /* Pressed-in panel, used for the active-nav indicator and other "selected" states. */
   .surface-pressed { @apply bg-surface shadow-neu-inset; }
 
+  /* Liquid-glass chrome for the public navbar: frosted translucency over whatever scrolls beneath it,
+   * a crisp inner highlight along the top rim (light catching the edge of water), and a soft colored
+   * shadow pooling underneath. `isolate` gives the sheen pseudo-element its own stacking context so a
+   * negative z-index keeps it under the nav's own links/logo without needing z-index on every child. */
+  .nav-glass {
+    @apply relative isolate overflow-hidden border border-white/70 bg-white/40 backdrop-blur-2xl backdrop-saturate-150 animate-liquid-bob;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      inset 0 -10px 24px -16px rgba(255, 255, 255, 0.7),
+      0 24px 48px -20px rgba(67, 56, 202, 0.4),
+      0 4px 14px rgba(13, 28, 47, 0.08);
+  }
+  /* The drifting highlight band itself - a wide, blurred, diagonal streak of light/brand tint that
+   * glides back and forth (see `liquid-sheen` keyframes), read together as light moving on water. */
+  .nav-glass::before {
+    content: "";
+    position: absolute;
+    inset: -60% -20%;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(115deg, transparent 32%, rgba(255, 255, 255, 0.8) 46%, rgba(165, 180, 252, 0.55) 53%, transparent 68%);
+    filter: blur(8px);
+    @apply animate-liquid-sheen;
+  }
+  /* Frosted panel for glass-nav dropdowns/menus (mobile drawer) - same material, no drifting sheen. */
+  .nav-glass-panel { @apply border border-white/70 bg-white/75 backdrop-blur-2xl backdrop-saturate-150 shadow-neu-lg; }
+
   .page-enter { @apply animate-fade-slide-up; }
 
   /* Animated highlighter-style marker for calling out a key phrase in a headline - a soft translucent

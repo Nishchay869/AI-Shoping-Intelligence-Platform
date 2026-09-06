@@ -308,13 +308,13 @@ export default function ProfilePage() {
       {tab === "integrations" && (
         <section className="card mt-6 p-6">
           <h2 className="text-lg font-bold text-ink">Connected accounts</h2>
-          <p className="mt-1 text-sm text-slate-500">Not connected yet - these need an external provider (OAuth, browser extension, email access) this app doesn&apos;t have configured.</p>
+          <p className="mt-1 text-sm text-slate-500">We&apos;re building out one-click connections to your other shopping tools - hang tight.</p>
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
             {INTEGRATIONS.map((integration) => (
               <div key={integration.label} className="rounded-xl border border-dashed border-slate-300 p-4 text-center">
                 <Icon name={integration.icon} className="mx-auto h-6 w-6 text-slate-400" />
                 <p className="mt-2 text-sm font-semibold text-ink">{integration.label}</p>
-                <p className="mt-2 pill inline-flex bg-slate-100 text-slate-500">Not connected</p>
+                <p className="mt-2 pill inline-flex bg-brand-50 text-brand-600">Coming soon</p>
               </div>
             ))}
           </div>

@@ -44,6 +44,11 @@ export default {
         "neu-brand-inset": "inset 3px 3px 8px rgba(55, 48, 163, 0.55), inset -3px -3px 8px rgba(129, 140, 248, 0.35)"
       },
       backdropBlur: { xs: "2px" },
+      transitionTimingFunction: {
+        // Overshoot-then-settle "spring" easing - a hover/press feels like it dips into water and
+        // rebounds, rather than gliding to a linear stop. Used across the liquid-glass navbar.
+        elastic: "cubic-bezier(0.34, 1.56, 0.64, 1)"
+      },
       keyframes: {
         "fade-slide-up": { "0%": { opacity: "0", transform: "translateY(10px)" }, "100%": { opacity: "1", transform: "translateY(0)" } },
         "fade-in": { "0%": { opacity: "0" }, "100%": { opacity: "1" } },
@@ -53,10 +58,15 @@ export default {
         "drawer-in": { "0%": { opacity: "0", transform: "translateX(-16px)" }, "100%": { opacity: "1", transform: "translateX(0)" } },
         "drawer-out": { "0%": { opacity: "1", transform: "translateX(0)" }, "100%": { opacity: "0", transform: "translateX(-16px)" } },
         "float-slow": { "0%, 100%": { transform: "translateY(0)" }, "50%": { transform: "translateY(-10px)" } },
-        "nav-in": { "0%": { opacity: "0", transform: "translateY(-18px)" }, "100%": { opacity: "1", transform: "translateY(0)" } },
+        "nav-in": { "0%": { opacity: "0", transform: "translateY(-18px) scale(0.96)" }, "100%": { opacity: "1", transform: "translateY(0) scale(1)" } },
         "mark-highlight": { "0%": { backgroundSize: "0% 0.85em" }, "100%": { backgroundSize: "100% 0.85em" } },
         shimmer: { "0%": { backgroundPosition: "-200% 0" }, "100%": { backgroundPosition: "200% 0" } },
         marquee: { "0%": { transform: "translateX(0)" }, "100%": { transform: "translateX(-50%)" } },
+        // A soft, wide highlight band drifting across the glass navbar, like light moving on the
+        // surface of still water - the visual signature of the "liquid glass" nav chrome.
+        "liquid-sheen": { "0%, 100%": { transform: "translateX(-35%) translateY(-6%) rotate(8deg)" }, "50%": { transform: "translateX(35%) translateY(6%) rotate(8deg)" } },
+        // Gentle ambient bob for the glass pill itself, as if resting afloat rather than fixed rigid.
+        "liquid-bob": { "0%, 100%": { transform: "translateY(0)" }, "50%": { transform: "translateY(-3px)" } },
         // A document-scanner style sweep: a glowing line travels down the receipt preview while OCR/LLM
         // extraction is in flight, then resets - `top` (not `transform`) so it tracks the container's own
         // height regardless of image aspect ratio.
@@ -75,12 +85,15 @@ export default {
         "drawer-in": "drawer-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) both",
         "drawer-out": "drawer-out 0.2s ease-in both",
         "float-slow": "float-slow 6s ease-in-out infinite",
-        "nav-in": "nav-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) both",
+        "nav-in": "nav-in 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both",
         "mark-highlight": "mark-highlight 1s cubic-bezier(0.65, 0, 0.35, 1) 0.7s both",
         shimmer: "shimmer 2.5s linear infinite",
+        "text-shimmer": "shimmer 5s linear infinite",
         marquee: "marquee 32s linear infinite",
         "scan-sweep": "scan-sweep 1.8s cubic-bezier(0.65, 0, 0.35, 1) infinite",
-        "icon-glint": "icon-glint 2.4s ease-in-out infinite"
+        "icon-glint": "icon-glint 2.4s ease-in-out infinite",
+        "liquid-sheen": "liquid-sheen 9s ease-in-out infinite",
+        "liquid-bob": "liquid-bob 5s ease-in-out infinite"
       }
     }
   },

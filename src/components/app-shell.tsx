@@ -11,6 +11,7 @@ import { supabase } from "@/shared/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
 type Notification = { id: string; message: string; product_title: string; is_read: boolean; created_at: string };
+type ReceiptWarranty = { id: string; store_name: string | null; purchase_date: string | null; warranty_expires_at: string | null };
 
 function timeAgo(iso: string): string {
   const seconds = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
@@ -20,6 +21,54 @@ function timeAgo(iso: string): string {
   const hours = Math.floor(minutes / 60);
   if (hours < 24) return `${hours}h ago`;
   return `${Math.floor(hours / 24)}d ago`;
+}
+
+const DAY_MS = 1000 * 60 * 60 * 24;
+const daysUntil = (iso: string) => Math.ceil((new Date(`${iso}T00:00:00`).getTime() - Date.now()) / DAY_MS);
+const formatExpiry = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+
+/** Urgency styling for a warranty countdown, softest (plenty of runway) to sharpest (about to lapse) -
+ * mirrors the backend's own 7-day WhatsApp alert window (see services/warranty_alerts.py) so the "soon"
+ * color in-app lines up with when a shopper would actually get pinged externally. */
+function warrantyTone(days: number) {
+  if (days <= 7) return { dot: "bg-rose-500", ring: "from-rose-400 to-rose-600", pill: "bg-rose-50 text-rose-600", bar: "bg-rose-500" };
+  if (days <= 30) return { dot: "bg-amber-500", ring: "from-amber-400 to-amber-600", pill: "bg-amber-50 text-amber-600", bar: "bg-amber-500" };
+  return { dot: "bg-emerald-500", ring: "from-emerald-400 to-emerald-600", pill: "bg-emerald-50 text-emerald-600", bar: "bg-emerald-500" };
+}
+
+/** Warranty countdown card for the notification panel - store, exact expiry date, a color-coded days-left
+ * pill, and (when the purchase date is known) a slim elapsed/remaining progress bar, so a glance tells a
+ * shopper not just *that* something's expiring but how much runway is actually left. */
+function WarrantyCard({ receipt }: { receipt: ReceiptWarranty & { warranty_expires_at: string } }) {
+  const days = daysUntil(receipt.warranty_expires_at);
+  const tone = warrantyTone(days);
+  let elapsedPct: number | null = null;
+  if (receipt.purchase_date) {
+    const start = new Date(`${receipt.purchase_date}T00:00:00`).getTime();
+    const end = new Date(`${receipt.warranty_expires_at}T00:00:00`).getTime();
+    if (end > start) elapsedPct = Math.min(100, Math.max(0, ((Date.now() - start) / (end - start)) * 100));
+  }
+  return (
+    <div className="rounded-xl px-3 py-2.5 transition-colors hover:bg-slate-900/5">
+      <div className="flex items-start gap-3">
+        <span className={`mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br text-white shadow-neu-sm ${tone.ring}`}>
+          <Icon name="shield" className="h-4 w-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-2">
+            <p className="truncate text-sm font-semibold text-ink">{receipt.store_name ?? "Your purchase"}</p>
+            <span className={`pill shrink-0 ${tone.pill}`}>{days <= 0 ? "Expires today" : `${days}d left`}</span>
+          </div>
+          <p className="mt-0.5 text-xs text-slate-400">Warranty expires {formatExpiry(receipt.warranty_expires_at)}</p>
+          {elapsedPct !== null && (
+            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-900/10">
+              <div className={`h-full rounded-full ${tone.bar}`} style={{ width: `${elapsedPct}%` }} />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 const navigation: { href: string; label: string; icon: IconName }[] = [
@@ -89,6 +138,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[] | null>(null);
+  const [warranties, setWarranties] = useState<ReceiptWarranty[] | null>(null);
   const [confirmingLogout, setConfirmingLogout] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
@@ -111,15 +161,32 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   async function toggleNotifications() {
     const opening = !notifOpen;
     setNotifOpen(opening);
-    if (opening && notifications === null) {
+    if (!opening) return;
+    if (notifications === null) {
       try {
-        const response = await fetch("/api/v1/notifications", { headers: await authHeaders() });
+        const headers = await authHeaders();
+        const response = await fetch("/api/v1/notifications", { headers });
         setNotifications(response.ok ? await response.json() : []);
       } catch {
         setNotifications([]);
       }
     }
+    if (warranties === null) {
+      try {
+        const response = await fetch("/api/v1/receipts", { headers: await authHeaders() });
+        setWarranties(response.ok ? await response.json() : []);
+      } catch {
+        setWarranties([]);
+      }
+    }
   }
+
+  // Soonest-expiring, not-yet-lapsed warranties first - the same shortlist a shopper would want a
+  // WhatsApp nudge about (see services/warranty_alerts.py), surfaced here even without WhatsApp opted in.
+  const upcomingWarranties = (warranties ?? [])
+    .filter((r): r is ReceiptWarranty & { warranty_expires_at: string } => !!r.warranty_expires_at && daysUntil(r.warranty_expires_at) >= 0)
+    .sort((a, b) => daysUntil(a.warranty_expires_at) - daysUntil(b.warranty_expires_at))
+    .slice(0, 3);
 
   async function confirmSignOut() {
     setSigningOut(true);
@@ -189,7 +256,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div className="relative">
               <button aria-label="Notifications" onClick={toggleNotifications} className="relative text-slate-500 transition-colors hover:text-slate-700">
                 <Icon name="bell" className="h-5 w-5" />
-                {notifications?.some((n) => !n.is_read) !== false && (
+                {(notifications?.some((n) => !n.is_read) !== false || upcomingWarranties.some((r) => daysUntil(r.warranty_expires_at) <= 7)) && (
                   <span className="absolute -right-0.5 -top-0.5 flex h-2 w-2">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75" />
                     <span className="relative inline-flex h-2 w-2 rounded-full bg-rose-500" />
@@ -200,8 +267,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               {notifOpen && (
                 <>
                   <button aria-label="Close notifications" className="fixed inset-0 z-40" onClick={() => setNotifOpen(false)} />
-                  <div className="surface-elevated animate-scale-in absolute right-0 top-full z-50 mt-3 w-80 origin-top-right rounded-2xl p-2">
-                    <p className="label-caps px-3 py-2 text-slate-400">Notifications</p>
+                  <div className="surface-elevated animate-scale-in absolute right-0 top-full z-50 mt-3 max-h-[28rem] w-80 origin-top-right overflow-y-auto rounded-2xl p-2">
+                    {(warranties === null || upcomingWarranties.length > 0) && (
+                      <div className="mb-1">
+                        <p className="label-caps flex items-center gap-1.5 px-3 py-2 text-slate-400"><Icon name="shield" className="h-3.5 w-3.5" />Warranty watch</p>
+                        {warranties === null && <p className="px-3 py-3 text-sm text-slate-400">Checking your receipts…</p>}
+                        {upcomingWarranties.map((receipt) => <WarrantyCard key={receipt.id} receipt={receipt} />)}
+                        {upcomingWarranties.length > 0 && (
+                          <Link href="/receipts" onClick={() => setNotifOpen(false)} className="mt-1 flex items-center justify-center gap-1 rounded-xl py-2 text-xs font-semibold text-brand-600 transition-colors hover:bg-brand-50">
+                            View all receipts <Icon name="arrow" className="h-3 w-3" />
+                          </Link>
+                        )}
+                        <div className="my-1 border-t border-slate-100" />
+                      </div>
+                    )}
+
+                    <p className="label-caps px-3 py-2 text-slate-400">Price alerts</p>
                     {notifications === null && <p className="px-3 py-4 text-sm text-slate-400">Loading…</p>}
                     {notifications !== null && notifications.length === 0 && (
                       <p className="px-3 py-4 text-sm text-slate-400">No price-drop alerts yet - they&apos;ll show up here once a wishlisted item drops in price.</p>
