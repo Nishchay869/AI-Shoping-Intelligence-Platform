@@ -62,9 +62,9 @@ export function SiteNav() {
               className="animate-text-shimmer bg-gradient-to-r from-brand-700 via-violet-500 via-40% to-brand-600 bg-clip-text text-xl font-extrabold tracking-tight text-transparent"
               style={{ backgroundSize: "200% auto" }}
             >
-              AI SIP
+              AI-SIP
             </span>
-            <span className="label-caps mt-1 text-[9px] tracking-[0.22em] text-brand-600/60">Shopping Intelligence</span>
+            {/* <span className="label-caps mt-1 text-[9px] tracking-[0.22em] text-brand-600/60">Shopping Intelligence</span> */}
           </span>
         </Link>
 
